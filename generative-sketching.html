@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Generative Sketching for Relational Joins</title>
+
+<!-- ============================================================================
+     GENERATIVE SKETCHING FOR RELATIONAL JOINS — Reveal.js skeleton
+     ----------------------------------------------------------------------------
+     HOW TO RUN
+       Serve from a folder (recommended) so CDN + MathJax load cleanly:
+         python3 -m http.server   then open http://localhost:8000/
+       Double-clicking the file (file://) also works but is flakier.
+
+     HOW TO SWAP FONTS      -> edit BOTH (1) the Google Fonts <link> below
+                               and (2) the --font-* vars in :root.
+     HOW TO ADD A SLIDE     -> copy a <section>...</section> into .slides.
+                               Nest <section>s for a vertical (down) stack.
+     COMPONENTS / ANIMATION -> see "COPY-PASTE PATTERNS" comment near the
+                               bottom of <body>, and design-system.md.
+
+     Dependencies are CDN-loaded (needs a network connection). To go fully
+     offline, vendor reveal.js + MathJax locally and repoint the URLs.
+     ============================================================================ -->
+
+<!-- Reveal core (cdnjs) -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reset.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reveal.min.css">
+
+<!-- FONTS (1/2): families here must match the --font-* vars in :root -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<!-- MathJax (CHTML). Typesetting runs off the navigation path via typesetSlide(),
+     so a MathJax hiccup can never freeze slide navigation. -->
+<script>
+  window.MathJax = {
+    tex: { inlineMath: [['\\(', '\\)'], ['$', '$']], displayMath: [['\\[', '\\]']] },
+    chtml: { scale: 1 },
+    startup: { typeset: false }
+  };
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+<style>
+/* ============================================================================
+   DESIGN SYSTEM — "Muted Academic"  (full reference in design-system.md)
+   Slate-led identity; clay is reserved for *our* method.
+   Signature motif: the +/-1 sign vector (dusty blue / dusty red).
+   Change a token below and the whole deck re-themes.
+   ============================================================================ */
+:root {
+  /* ---- FONTS (2/2) · change here (and the Google Fonts <link> above) ---- */
+  --font-display: 'Spectral', Georgia, 'Times New Roman', serif;  /* headings  */
+  --font-body:    'Spectral', Georgia, 'Times New Roman', serif;  /* prose     */
+  --font-label:   'Inter', system-ui, sans-serif;                 /* labels    */
+  --font-mono:    'JetBrains Mono', ui-monospace, monospace;      /* data/math */
+
+  /* ---- palette ---- */
+  --paper:      #FAF8F4;   /* slide background        */
+  --ink:        #26292E;   /* body text               */
+  --muted:      #6B7078;   /* captions, secondary     */
+  --slate:      #3E5C76;   /* primary accent          */
+  --slate-soft: #E3E9EE;   /* slate tint (callouts)   */
+  --clay:       #B0654F;   /* accent — OUR method only*/
+  --clay-soft:  #F1E4DE;
+  --sage:       #7A8B6F;   /* positive / pros         */
+  --sage-soft:  #E7EBE1;
+  --plus:       #4E7A94;   /* tug-of-war +1 (blue)    */
+  --minus:      #C1666B;   /* tug-of-war -1 (red)     */
+  --rule:       #D8D2C6;   /* borders, dividers       */
+
+  /* ---- reveal base overrides (derived from tokens above) ---- */
+  --r-background-color: var(--paper);
+  --r-main-font: var(--font-body);
+  --r-main-font-size: 30px;
+  --r-main-color: var(--ink);
+  --r-heading-font: var(--font-display);
+  --r-heading-color: var(--slate);
+  --r-heading-font-weight: 600;
+  --r-heading1-size: 2.1em;
+  --r-heading2-size: 1.5em;
+  --r-heading3-size: 1.2em;
+  --r-link-color: var(--slate);
+  --r-link-color-hover: var(--clay);
+  --r-code-font: var(--font-mono);
+}
+
+/* ---- base ---- */
+.reveal { font-family: var(--font-body); color: var(--ink); font-weight: 400; }
+.reveal .slides { text-align: left; }
+.reveal .slides section { line-height: 1.4; }
+.reveal h1, .reveal h2, .reveal h3, .reveal h4 {
+  font-family: var(--font-display); color: var(--slate);
+  font-weight: 600; letter-spacing: -0.01em; text-transform: none; margin-bottom: 0.5em;
+}
+.reveal h1 { line-height: 1.1; }
+.reveal p, .reveal li { color: var(--ink); }
+.reveal strong { color: var(--ink); font-weight: 600; }
+.reveal em { color: var(--muted); font-style: italic; }
+.reveal a { text-decoration: none; border-bottom: 1px solid var(--rule); }
+
+/* ---- type helpers ---- */
+.eyebrow { font-family: var(--font-label); font-weight: 600; font-size: 0.5em; letter-spacing: 0.16em; text-transform: uppercase; color: var(--slate); margin-bottom: 0.6em; }
+.caption { font-family: var(--font-label); font-size: 0.62em; color: var(--muted); }
+.mono    { font-family: var(--font-mono); }
+.rule    { border: none; height: 2px; background: var(--slate); width: 84px; margin: 0.6em 0 1em; opacity: 0.85; }
+
+/* ---- code ---- */
+.reveal pre { box-shadow: none; font-size: 0.6em; width: 100%; }
+.reveal pre code { font-family: var(--font-mono); background: #F3F1EB; color: var(--ink); border: 1px solid var(--rule); border-left: 3px solid var(--slate); border-radius: 6px; padding: 14px 16px; line-height: 1.5; }
+.reveal code { font-family: var(--font-mono); }
+
+/* ---- components ---- */
+.card     { background: #fff; border: 1px solid var(--rule); border-radius: 10px; padding: 16px 18px; box-shadow: 0 1px 3px rgba(38,41,46,0.05); }
+.ours     { background: var(--clay-soft); border: 1px solid var(--clay); border-left: 4px solid var(--clay); border-radius: 8px; padding: 14px 18px; }  /* the ONLY place clay is used */
+.ours .eyebrow { color: var(--clay); }
+.callout  { background: var(--slate-soft); border-left: 4px solid var(--slate); border-radius: 8px; padding: 14px 18px; }
+.proscons { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.pros     { background: var(--sage-soft); border: 1px solid var(--sage); border-radius: 8px; padding: 14px 18px; }
+.cons     { background: var(--clay-soft); border: 1px solid var(--clay); border-radius: 8px; padding: 14px 18px; }
+.pros h4  { color: var(--sage); margin: 0 0 .3em; }
+.cons h4  { color: var(--clay); margin: 0 0 .3em; }
+
+/* ---- SIGNATURE: the +/-1 sign vector.  <span class="signvec" data-signvec="+-+--+"></span> ---- */
+.signvec { display: inline-flex; gap: 5px; vertical-align: middle; }
+.signvec .bit { width: 28px; height: 28px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; font-family: var(--font-label); font-weight: 600; font-size: 16px; color: #fff; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.25); }
+.signvec .bit.p { background: var(--plus); }
+.signvec .bit.m { background: var(--minus); }
+.tag-plus  { color: var(--plus);  font-weight: 600; }
+.tag-minus { color: var(--minus); font-weight: 600; }
+
+/* ---- tables ---- */
+.reveal table { border-collapse: collapse; font-size: 0.72em; margin: 0.4em 0; }
+.reveal table th { background: var(--slate); color: #fff; padding: 8px 12px; font-family: var(--font-label); font-weight: 600; }
+.reveal table td { padding: 7px 12px; border: 1px solid var(--rule); }
+.reveal table td.k { background: #F3F1EB; font-weight: 600; }
+
+/* ---- section divider ---- */
+.section-divider { text-align: left; }
+.section-divider .kicker { font-family: var(--font-label); font-weight: 600; font-size: 0.5em; letter-spacing: 0.18em; text-transform: uppercase; color: var(--clay); }
+.section-divider h1 { color: var(--slate); font-size: 2.4em; margin: 0.1em 0 0; }
+.section-divider .num { font-family: var(--font-mono); color: var(--rule); font-size: 5.5em; line-height: 1; font-weight: 500; }
+
+/* ---- agenda ---- */
+.agenda { list-style: none; margin: 0; padding: 0; counter-reset: ag; }
+.agenda li { counter-increment: ag; padding: 9px 0; border-bottom: 1px solid var(--rule); display: flex; align-items: baseline; gap: 16px; font-size: 0.9em; }
+.agenda li::before { content: counter(ag, decimal-leading-zero); font-family: var(--font-mono); color: var(--slate); font-size: 0.7em; min-width: 2.2em; }
+.agenda li.mine { color: var(--clay); font-weight: 600; }
+.agenda li.mine::before { color: var(--clay); }
+
+/* ---- title ---- */
+.title-slide h1 { font-size: 2.3em; line-height: 1.08; margin: 0; }
+.title-slide .sub { font-size: 0.92em; color: var(--muted); font-style: italic; margin-top: 0.4em; }
+.title-slide .who { margin-top: 1.4em; font-size: 0.8em; line-height: 1.5; }
+.title-slide .who .name { color: var(--ink); font-weight: 600; font-style: normal; }
+
+/* ---- MathJax on slides ---- */
+.reveal mjx-container { color: var(--ink); }
+.reveal mjx-container[display="true"] { margin: 0.5em 0; }
+
+/* ---- draw-on arrow helper (see COPY-PASTE PATTERNS) ---- */
+.reveal .fragment.draw path, .reveal .fragment.draw line { stroke-dashoffset: var(--len, 400); }
+.reveal .fragment.draw.visible path, .reveal .fragment.draw.visible line { stroke-dashoffset: 0; transition: stroke-dashoffset 0.7s ease; }
+.arrow-svg path, .arrow-svg line { stroke: var(--slate); stroke-width: 3; fill: none; }
+.arrow-svg .head { fill: var(--slate); stroke: none; }
+
+/* ---- chrome ---- */
+.reveal .slide-number { background: transparent; color: var(--muted); font-family: var(--font-mono); }
+.reveal .controls { color: var(--slate); }
+.reveal .progress { color: var(--slate); }
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal .fragment.draw.visible path, .reveal .fragment.draw.visible line { transition: none; }
+}
+</style>
+</head>
+
+<body>
+<div class="reveal">
+  <div class="slides">
+
+    <!-- ===== TITLE ===== -->
+    <section class="title-slide">
+      <div class="eyebrow">Technical Seminar</div>
+      <h1>Generative Sketching<br>for Relational Joins</h1>
+      <hr class="rule">
+      <div class="sub">Compact summaries, learned distributions, and faster query optimization.</div>
+      <div class="who">
+        <span class="name">Brian Tsan</span><br>
+        <span class="caption">Ph.D., Database Systems &nbsp;&middot;&nbsp; btsan@ucmerced.edu</span>
+      </div>
+    </section>
+
+    <!-- ===== AGENDA ===== -->
+    <section>
+      <div class="eyebrow">Roadmap</div>
+      <h2>What we'll cover</h2>
+      <hr class="rule">
+      <ol class="agenda" style="font-size: 0.82em;">
+        <li>Who I am</li>
+        <li>What is sketching?</li>
+        <li>The tug-of-war sketch</li>
+        <li>Sketching the size of a join</li>
+        <li>Where it breaks down</li>
+        <li class="mine">Generative sketching &mdash; my work</li>
+        <li>Results: 10&times; faster than PostgreSQL on JOB</li>
+        <li>Conclusion</li>
+      </ol>
+    </section>
+
+    <!-- ===== SECTION DIVIDER — reusable template =====
+         Copy this for each new section. Two consecutive dividers with
+         data-auto-animate will morph the number + title between them. -->
+    <section class="section-divider" data-auto-animate>
+      <div class="num" data-id="secnum">01</div>
+      <div class="kicker">Section</div>
+      <h1 data-id="sectitle">Section title</h1>
+      <p class="caption" style="margin-top:0.6em;">One-line framing of what this section does.</p>
+    </section>
+
+    <!-- ============================================================
+         CONTENT SECTIONS — one stub per roadmap item.
+         Add your slides beneath each stub (duplicate <section> for
+         more; nest <section>s for a vertical/down stack).
+         ============================================================ -->
+
+    <section><div class="eyebrow">1 &middot; Introduction</div><h2>Who I am</h2><hr class="rule"><p class="caption">TODO &mdash; condensed, ML/CV-legible self-intro.</p></section>
+
+    <section><div class="eyebrow">2 &middot; Foundations</div><h2>What is sketching?</h2><hr class="rule">
+      <p class="caption">TODO &mdash; definition (sublinear summaries) + three example applications:</p>
+      <ul style="font-size:0.8em;">
+        <li><strong>Inner products</strong> &mdash; TurboQuant / QJL sign bits in LLM KV-caches</li>
+        <li><strong>Embedding distributions</strong> &mdash; LeJEPA / SIGReg random 1D projections</li>
+        <li><strong>Join sizes</strong> &mdash; the database case (our focus)</li>
+      </ul>
+    </section>
+
+    <section><div class="eyebrow">3 &middot; The classic sketch</div><h2>The tug-of-war sketch</h2><hr class="rule"><p class="caption">TODO &mdash; &plusmn;1 estimator + interactive demo.</p></section>
+
+    <section><div class="eyebrow">4 &middot; Application</div><h2>Sketching the size of a join</h2><hr class="rule"><p class="caption">TODO &mdash; how tug-of-war estimates join size (DB part kept light).</p></section>
+
+    <section><div class="eyebrow">5 &middot; Limitation</div><h2>Where it breaks down</h2><hr class="rule"><p class="caption">TODO &mdash; curse of dimensionality / multivariate tables.</p></section>
+
+    <section><div class="eyebrow">6 &middot; My work</div><h2 style="color:var(--clay);">Generative sketching</h2><hr class="rule" style="background:var(--clay);"><p class="caption">TODO &mdash; generative models learn the distribution, generate sketches.</p></section>
+
+    <section><div class="eyebrow">7 &middot; Results</div><h2>10&times; faster than PostgreSQL</h2><hr class="rule"><p class="caption">TODO &mdash; Join Order Benchmark, our models as cardinality estimators.</p></section>
+
+    <section><div class="eyebrow">8 &middot; Wrap-up</div><h2>Conclusion</h2><hr class="rule"><p class="caption">TODO &mdash; recap + takeaways.</p></section>
+
+  </div>
+</div>
+
+<!-- ============================================================================
+     COPY-PASTE PATTERNS  (delete once you're comfortable)
+     ----------------------------------------------------------------------------
+     FRAGMENT (appears on next arrow):
+       <p class="fragment">Revealed later.</p>
+       <p class="fragment" data-fragment-index="2">Explicit order.</p>
+
+     SIGN VECTOR (the signature motif):
+       <span class="signvec" data-signvec="+--+-+"></span>
+
+     INLINE / DISPLAY MATH (MathJax):
+       inline:  \( \mathbb{E}[\langle x,s\rangle\langle y,s\rangle] = \langle x,y\rangle \)
+       display: \[ \operatorname{Var} = \tfrac{1}{k}\,\lVert x\rVert^2\lVert y\rVert^2 \]
+
+     AUTO-ANIMATE (morph between two consecutive slides — matching data-id moves):
+       <section data-auto-animate><h2 data-id="t">A</h2></section>
+       <section data-auto-animate><h2 data-id="t" style="color:var(--clay)">A</h2></section>
+
+     DRAW-ON ARROW (stroke draws when the fragment becomes active;
+                    set --len and stroke-dasharray to the same path length):
+       <span class="fragment draw" style="--len:120;">
+         <svg class="arrow-svg" width="140" height="24" viewBox="0 0 140 24"
+              style="stroke-dasharray:120;">
+           <line x1="4" y1="12" x2="124" y2="12"></line>
+           <path class="head" d="M124 6 L136 12 L124 18 Z" style="stroke-dasharray:0;"></path>
+         </svg>
+       </span>
+
+     COMPONENTS: .card  .ours (our-method only)  .callout  .proscons/.pros/.cons
+                 tables (th slate, td.k key column)  .agenda (add .mine for clay)
+
+     KEYS: arrows navigate · F fullscreen · S speaker notes · ESC overview · . pause
+     ============================================================================ -->
+
+<!-- Reveal + plugins -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reveal.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/plugin/notes/notes.min.js"></script>
+<script>
+  /* Render any [data-signvec] chips, e.g. data-signvec="+-+--+" */
+  function renderSignVectors(root) {
+    (root || document).querySelectorAll('[data-signvec]').forEach(function (el) {
+      if (el.dataset.rendered) return;
+      var s = el.getAttribute('data-signvec');
+      el.innerHTML = s.split('').filter(function (c) { return c === '+' || c === '-'; })
+        .map(function (c) {
+          return '<span class="bit ' + (c === '+' ? 'p' : 'm') + '">' + (c === '+' ? '+' : '\u2212') + '</span>';
+        }).join('');
+      el.dataset.rendered = '1';
+    });
+  }
+
+  /* Typeset a slide's math at most once, isolated from the navigation
+     event loop so a MathJax hiccup can never break navigation. */
+  function typesetSlide(slide) {
+    if (!slide || slide.dataset.mathDone) return;
+    if (!(window.MathJax && MathJax.typesetPromise)) return;
+    slide.dataset.mathDone = '1';
+    setTimeout(function () {
+      try {
+        MathJax.typesetPromise([slide]).catch(function (e) { console.warn('MathJax:', e); });
+      } catch (e) { console.warn('MathJax:', e); }
+    }, 0);
+  }
+
+  Reveal.initialize({
+    width: 1120, height: 760, margin: 0.06,
+    minScale: 0.2, maxScale: 2.0,
+    hash: true, slideNumber: 'c/t',
+    controls: true, progress: true,
+    transition: 'fade', transitionSpeed: 'default',
+    autoAnimateEasing: 'ease', autoAnimateDuration: 0.6,
+    plugins: [RevealNotes]
+  });
+
+  renderSignVectors(document);
+  Reveal.on('ready', function (e) { typesetSlide(e.currentSlide); });
+  Reveal.on('slidechanged', function (e) {
+    try { renderSignVectors(e.currentSlide); } catch (err) { console.warn(err); }
+    typesetSlide(e.currentSlide);
+  });
+</script>
+</body>
+</html>
