@@ -68,9 +68,13 @@
   --clay-soft:  #F1E4DE;
   --sage:       #7A8B6F;   /* positive / pros         */
   --sage-soft:  #E7EBE1;
+  --rule:       #D8D2C6;   /* borders, dividers       */
+  /* ---- semantic palette (for figures, demos, etc.) ---- */
   --plus:       #4E7A94;   /* tug-of-war +1 (blue)    */
   --minus:      #C1666B;   /* tug-of-war -1 (red)     */
-  --rule:       #D8D2C6;   /* borders, dividers       */
+  --red:        #FFCCCC;   /* stream element (red)    */
+  --blue:       #CCEEFF;   /* stream element (blue)   */
+  --green:      #CCDDAA;   /* stream element (green)  */
 
   /* ---- reveal base overrides (derived from tokens above) ---- */
   --r-background-color: var(--paper);
@@ -126,11 +130,257 @@
 
 /* ---- SIGNATURE: the +/-1 sign vector.  <span class="signvec" data-signvec="+-+--+"></span> ---- */
 .signvec { display: inline-flex; gap: 5px; vertical-align: middle; }
-.signvec .bit { width: 28px; height: 28px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; font-family: var(--font-label); font-weight: 600; font-size: 16px; color: #fff; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.25); }
-.signvec .bit.p { background: var(--plus); }
-.signvec .bit.m { background: var(--minus); }
+.bit { width: 28px; height: 28px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; font-family: var(--font-label); font-weight: 600; font-size: 16px; color: #fff; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.25); }
+.bit.p { background: var(--plus); }
+.bit.m { background: var(--minus); }
 .tag-plus  { color: var(--plus);  font-weight: 600; }
 .tag-minus { color: var(--minus); font-weight: 600; }
+
+/* ---- relation diagram (multiset of rows as colored circles) ---- */
+.relation-diagram { position: relative; display: flex; justify-content: center; align-items: flex-start; gap: 64px; margin-top: 1.6em; }
+/* DECOUPLED BACKGROUND: .relation is layout-only and paints nothing; the visible
+   chrome lives in .relation-bg. Reveal writes each matched element's ABSOLUTE
+   delta as a transform with no ancestor compensation, and CSS transforms compose
+   down the tree -- so no matched element may be an ancestor of another matched
+   one. Keeping .relation unmatched lets the bg, title and dots all carry their
+   own data-id and glide together without their deltas multiplying.
+   No overflow:hidden here: the dots animate in from outside the box's final
+   position and that rule would clip them into invisibility.
+   Dimensions are pinned so the matched bg has identical geometry on both
+   slides (otherwise Reveal's scaleX/scaleY distorts it mid-glide).
+   min-height = 5*26px dots + 4*10px gaps. */
+.relation { position: relative; box-sizing: border-box; width: 140px; padding: 1px; }
+.relation-bg { position: absolute; inset: 0; background: #fff; border: 1px solid var(--rule); border-radius: 10px; box-shadow: 0 1px 3px rgba(38,41,46,0.05); }
+.relation-title { position: relative; border-radius: 9px 9px 0 0; font-family: var(--font-label); font-weight: 600; font-size: 0.55em; letter-spacing: 0.1em; text-transform: uppercase; color: var(--slate); background: #F3F1EB; text-align: center; padding: 8px 12px; border-bottom: 1px solid var(--rule); }
+.relation-rows { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 16px 22px; box-sizing: content-box; min-height: 170px; }
+.dot { width: 26px; height: 26px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(38,41,46,0.15); }
+/* ---- sketching matrix: a 4x2 projection operator, values deliberately elided.
+   Both tables are sketched with the SAME S (shared randomness is what makes the
+   inner product of the two sketches an unbiased estimate of the join size). ---- */
+.sketch-group { display: flex; align-items: center; gap: 16px; }
+.projop { font-family: var(--font-body); font-size: 1.6em; line-height: 1; color: var(--muted); }
+.matrix, .vector { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+/* .vec = single-column (a vector); .gdots = a vertical-ellipsis row spanning
+   the full grid width, standing in for the unshown middle of N dimensions. */
+.matrix-grid.vec { grid-template-columns: 24px; border-color: transparent; }
+/* Same decoupled-background trick as .relation: .vec-bg carries the bracket
+   rules as a SIBLING of the grid, so the box and the individual entries can
+   both be auto-animate targets without one being the other's ancestor. */
+.vec-frame { position: relative; }
+.vec-bg { position: absolute; inset: 0; border-left: 2px solid var(--slate); border-right: 2px solid var(--slate); }
+/* inside a stream column the ellipsis stands in for one row, so the box height
+   (and therefore the whole figure) is unchanged */
+.relation-rows .gdots { height: 26px; }
+.gdots { grid-column: 1 / -1; display: flex; align-items: center; justify-content: center; font-family: var(--font-body); font-size: 0.9em; line-height: 1; color: var(--muted); }
+.matrix-grid { display: grid; grid-template-columns: repeat(2, 24px); grid-auto-rows: 24px; gap: 10px; padding: 10px 12px; border-left: 2px solid var(--slate); border-right: 2px solid var(--slate); }
+.matrix-cell { border-radius: 4px; background: var(--slate-soft); box-shadow: inset 0 0 0 1px rgba(62,92,118,0.28); }
+.matrix-label { font-family: var(--font-mono); font-size: 0.55em; color: var(--muted); }
+/* ---- inner product of the two sketches: <  Sx1 , Sx2  > ---- */
+.relation-diagram.inner-product { align-items: center; gap: 14px; }
+.angle { font-family: var(--font-body); font-weight: 300; font-size: 4.5em; line-height: 1; color: var(--slate); transform: scaleY(2); }
+.ipcomma { font-family: var(--font-body); font-size: 2em; line-height: 1; color: var(--slate); }
+.ip-note { text-align: center; margin-top: 1.2em; font-size: 0.72em; color: var(--ink); }
+.join-lines-overlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.join-lines-overlay line { stroke: var(--slate); stroke-width: 3; fill: none; }
+/* The duplicate lands exactly on the dot before it and contributes no height:
+   it cancels its own 26px box plus the 10px flex gap above it. Kept a plain
+   sibling (no wrapper) so every dot has a matching counterpart to animate to. */
+.dot-dup { margin-top: -36px; }
+/* merged: both .relation boxes share one grid cell so their dot columns
+   superimpose; tbl2 fades to an invisible overlay contributing only its dots. */
+.relation-diagram.merged { display: grid; justify-items: center; align-items: start; gap: 0; }
+.relation-diagram.merged > .relation { grid-area: 1 / 1; }
+.relation-diagram.merged [data-tbl="2"] .relation-bg { background: transparent; border-color: transparent; box-shadow: none; }
+.relation-diagram.merged [data-tbl="2"] .relation-title { color: transparent; background: transparent; border-bottom-color: transparent; }
+
+/* ---- tug-of-war: the stream sits far left; items fly out to either side of
+   the counter (right = +1, left = -1), so the two piles literally pull. ---- */
+.tow { position: relative; display: grid; grid-template-columns: auto 1fr; align-items: center; margin-top: 1.3em; }
+.tow-arena { position: relative; justify-self: center; display: flex; align-items: center; gap: 18px; }
+/* Out of flow, so it adds no height and the figure keeps the position it holds
+   on the previous two slides. Anchored to the arena (not .tow) so it centres on
+   the counter rather than on the full width, which the stream column would skew.
+   It sits in the gap .tow's align-items:center leaves under the short arena. */
+.tw-math { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: 20px; display: flex; flex-direction: column; align-items: center; gap: 10px; white-space: nowrap; font-size: 0.66em; color: var(--ink); }
+.pile { display: flex; gap: 8px; }
+.pile.minus { flex-direction: row-reverse; }   /* arrivals queue outward from the counter */
+.pile-slot { width: 26px; height: 26px; }      /* reserves the landing spot, draws nothing */
+/* Reveal's base hide is .fragment:not(.custom), so `custom` keeps the dot visible
+   in the stream and lets the fragment step do nothing but move it. The transition
+   must outrank `.reveal .fragment{transition:all .2s ease}` (0,2,0), hence the
+   .reveal .fragment.fly selector. z-index lifts a dot over the counter box as it
+   crosses to the plus pile. */
+/* Each stream position holds two stacked dots: the in-flow one stays behind as a
+   record of the item, the absolute one flies to a pile. display:flex on the slot
+   keeps the in-flow dot a flex item so its width/height still apply. */
+.stream-slot { position: relative; display: flex; }
+.reveal .fragment.fly { position: absolute; inset: 0; z-index: 3; transition: transform 0.55s cubic-bezier(.4,.05,.2,1); }
+.reveal .fragment.fly.visible { transform: translate(var(--fx, 0px), var(--fy, 0px)); }
+/* each item carries its own sign, so the arena needs no +/- markers */
+.dot.fly, .dot.signed, .dot.tw-dot { display: flex; align-items: center; justify-content: center; font-family: var(--font-label); font-weight: 600; font-size: 15px; color: var(--ink); }
+/* the sign is earned on arrival: it fades in as the flight settles */
+.dot.fly .sgn { opacity: 0; transition: opacity 0.25s ease 0.3s; }
+.reveal .fragment.fly.visible .sgn { opacity: 1; }
+/* every .cval sits in the same grid cell, so the counter reads as one box
+   whose value is swapped by .current-visible rather than a list of numbers */
+.counter-box { display: grid; place-items: center; min-width: 110px; padding: 16px 12px; background: #fff; border: 1px solid var(--rule); border-radius: 10px; box-shadow: 0 1px 3px rgba(38,41,46,0.05); }
+.cval { grid-area: 1 / 1; font-family: var(--font-mono); font-weight: 500; font-size: 1.7em; color: var(--slate); }
+
+/* ---- interactive round-by-round tug-of-war (JS-driven, no fragments) ---- */
+.tw-dot { position: absolute; inset: 0; z-index: 3; transition: transform 0.45s ease; }
+.tw-controls { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 1.05em; font-family: var(--font-label); font-size: 0.55em; }
+.tw-btn { font-family: var(--font-label); font-weight: 600; font-size: 1em; letter-spacing: 0.05em; text-transform: uppercase; color: #fff; background: var(--slate); border: none; border-radius: 7px; padding: 9px 22px; cursor: pointer; }
+.tw-btn:hover { background: #34506a; }
+.tw-btn.tw-ghost { background: transparent; color: var(--slate); box-shadow: inset 0 0 0 1px var(--rule); }
+.tw-round { color: var(--muted); }
+/* keeps the footer block one height whether it holds a note or the buttons,
+   so the figure above it does not move between the two slides */
+.slide-foot { min-height: 62px; }
+.est-avg { font-family: var(--font-mono); font-size: 0.7em; color: var(--ink); }
+
+/* ---- join-size setup: two streams, two counters ----
+   space-between pins Stream 1 to the left edge, the same x it holds inside
+   .tow's `auto 1fr` grid on the previous slide, so it does not move. */
+.jsk { position: relative; display: flex; align-items: center; justify-content: space-between; margin-top: 1.3em; }
+.jsk-mid { display: flex; align-items: center; gap: 34px; }
+.counter-wrap { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+/* The product is a bare number: no card, border, radius or shadow -- exactly the
+   .counter-box chrome omitted. Larger and in --ink (not --slate) so it reads as a
+   result rather than a third sketch. Not --clay: that is reserved for our method.
+   Mirroring .counter-wrap's content+gap+label structure makes the digits share a
+   centre line with the counters automatically. */
+.jsk-prod { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.prod-val { font-family: var(--font-mono); font-weight: 500; font-size: 2.2em; line-height: 1; color: var(--ink); }
+/* .absorb: the sign is shown up front (the dot vanishes on arrival, so revealing
+   it there would be pointless) and the dot fades as it reaches the counter --
+   absorbed INTO the sketch rather than landing beside it. The .visible selector
+   is (0,5,0) so it outranks the (0,3,0) base .fly rule. */
+.dot.fly.absorb .sgn { opacity: 1; transition: none; }
+.reveal .fragment.fly.absorb.visible { opacity: 0; transition: transform 0.55s cubic-bezier(.4,.05,.2,1), opacity 0.25s ease 0.4s; }
+
+/* ---- true join size, shown over the reserved band ----
+   .joincalc is absolutely positioned inside .jsk-foot, so it adds no height and
+   the reserved ghost keeps Stream 1 anchored exactly where the previous slide
+   leaves it. The colour of each term is carried by a dot, not a word. */
+.jsk-foot { position: relative; }
+.joincalc { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
+.joincalc .eyebrow { margin-bottom: 0; }
+.joincalc-eq { font-family: var(--font-mono); font-size: 0.78em; color: var(--ink); }
+.joincalc-eq strong { color: var(--slate); font-size: 1.15em; }
+/* inline-block is required: width/height are ignored on inline non-replaced
+   elements, and .dot alone does not set a display. */
+.dot.dot-sm { width: 15px; height: 15px; display: inline-block; vertical-align: -2px; }
+
+/* ---- the joint-distribution problem: one column widens into a whole tuple ----
+   Left-pinned in grid column 1, so the box grows rightward only and the key
+   column keeps the exact x it had before. .wide overrides the 140px that the
+   tug-of-war slides pin on .relation. */
+/* Centred pair with a FIXED gap. The earlier `auto 1fr` + justify-self:end
+   pinned the two to opposite slide edges, which left a large dead space that
+   only closed as the table grew. Trade-off: the group re-centres as the table
+   widens, so the table drifts left and the sketch right -- both are matched
+   auto-animate elements, so they glide rather than jump. */
+.jdist { position: relative; display: flex; align-items: center; justify-content: center; gap: 52px; margin-top: 1.4em; }
+.relation.wide { width: auto; }
+.rel-grid { position: relative; display: grid; gap: 12px 16px; padding: 16px 20px; justify-items: center; align-items: center; }
+.rel-head { font-family: var(--font-label); font-size: 0.4em; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+/* non-key attributes: one monochrome slate scale, so they read as "other values"
+   without competing with the key colours or borrowing --clay / --plus / --minus */
+.dot.attr-1 { background: rgba(62,92,118,0.14); }
+.dot.attr-2 { background: rgba(62,92,118,0.30); }
+.dot.attr-3 { background: rgba(62,92,118,0.48); }
+/* ---- the generative model. Clay marks our-method content (CLAUDE.md reserves
+   it for exactly this); .ours is one component of that, not the only use. ---- */
+.gen { display: flex; align-items: center; gap: 20px; }
+.emb-pair { display: flex; flex-direction: column; gap: 14px; }
+.pipearrow { font-family: var(--font-body); font-size: 1.5em; line-height: 1; color: var(--muted); }
+/* Decoupled background, same reason as .relation: the sockets (which hold the
+   matched flying dots) must not sit inside a matched element, or the transforms
+   compound. .nnbox is structural and paints nothing; .nnbox-bg is the matched
+   card. Dropping the border from .nnbox also makes the socket coordinates below
+   exact -- content now starts at exactly the padding (14, 12). */
+.nnbox { position: relative; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px 14px; }
+.nnbox-bg { position: absolute; inset: 0; background: var(--clay-soft); border: 1px solid var(--clay); border-radius: 10px; }
+/* svg/label must be positioned to paint above the absolutely-positioned bg */
+.nnbox > svg, .nnbox > .matrix-label { position: relative; }
+.nnbox .matrix-label { color: var(--clay); }
+.nn-node { fill: var(--clay); }
+.nn-edge { stroke: var(--clay); stroke-width: 1; opacity: 0.45; }
+/* Placed by grid-row rather than pixel offsets, so it cannot drift with the
+   header's font metrics. Sits before the dots in DOM order, so it paints behind
+   them without needing z-index (both are non-positioned grid items). */
+/* justify-self/align-self are REQUIRED: .rel-grid sets justify-items:center,
+   which shrink-wraps grid items, so an empty div collapses to 0x0. */
+.row-hl { grid-column: 1 / -1; justify-self: stretch; align-self: stretch; margin: -6px -12px; border-radius: 8px; background: var(--clay-soft); box-shadow: inset 0 0 0 1px var(--clay); }
+/* the dot flying out of a table cell overlays it, so the table layout is
+   untouched; display:flex keeps the inner dot sized (width/height are ignored
+   on inline non-replaced elements). */
+.cell-slot { position: relative; display: flex; }
+/* NOT scoped to .cell-slot: inside .nn-socket the flier would be a bare inline
+   .dot, whose width/height are ignored, measuring 0x0 -- auto-animate then
+   computes scaleX = 26/0 = Infinity and the motion goes haywire. */
+.fly-dot { position: absolute; inset: 0; }
+/* unmatched 26px landing pad for the key dot; holds the space so the loss row
+   does not shift when the dot arrives */
+.loss-slot { position: relative; display: block; width: 26px; height: 26px; }
+/* SOCKET COORDS must agree with the SVG below: nodes at (17,32) and (17,72),
+   r=13; box padding is 12px 14px, so a 26px dot centres at left:18 top:31/71. */
+.nn-socket { position: absolute; width: 26px; height: 26px; border-radius: 50%; }
+.nn-in-node { fill: none; stroke: var(--clay); stroke-width: 2; }
+
+/* ---- sketch of rank 1/2/3. Offset+faded layers give the deck-of-cards depth
+   read without 3-D transforms, which stay predictable inside Reveal's scaled
+   container. min-height and the stack padding are present on ALL slides so the
+   front layer never moves as rows and layers arrive. ---- */
+.sk { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.sk-body { display: flex; align-items: flex-start; gap: 8px; }
+.sk-stack { position: relative; padding: 42px 42px 0 0; }
+.sk-layer { display: grid; grid-template-columns: repeat(4, 22px); grid-auto-rows: 22px; gap: 3px; align-content: start; min-height: 97px; }
+.sk-layer.front { position: relative; z-index: 5; }
+.sk-layer:not(.front) { position: absolute; left: 0; top: 42px; transform: translate(calc(var(--i) * 14px), calc(var(--i) * -14px)); z-index: calc(4 - var(--i)); opacity: calc(1 - var(--i) * 0.18); }
+.sk-cell { border-radius: 3px; background: var(--slate-soft); box-shadow: inset 0 0 0 1px rgba(62,92,118,0.28); }
+.sk-xlab, .sk-ylab, .sk-zlab { font-family: var(--font-label); font-size: 0.4em; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.sk-ylab { writing-mode: vertical-rl; transform: rotate(180deg); margin-top: 42px; }
+.sk-zlab { position: absolute; top: 6px; right: 0; transform: rotate(-45deg); transform-origin: right center; }
+
+/* ---- interactive count sketch: width = buckets (the hashing trick),
+   depth = independent rows combined by median. Depth never exceeds the stream
+   box height and .csk is space-between, so growing the sketch moves nothing. ---- */
+/* .strm shares the layout but NOT the class: layoutCountSketch() queries .csk
+   and would otherwise initialise against this slide's missing #csk-* ids. */
+.csk, .strm { position: relative; display: flex; align-items: center; justify-content: space-between; margin-top: 1.3em; }
+/* fliers live on the .strm root, outside the grids, so rebuilding a grid each
+   tick cannot disturb one mid-flight */
+.str-fly { position: absolute; width: 22px; height: 22px; border-radius: 50%; z-index: 5; pointer-events: none; box-shadow: inset 0 0 0 1px rgba(38,41,46,0.15); transition: transform 0.5s cubic-bezier(.4,.05,.2,1), opacity 0.25s ease 0.3s; }
+.csk-mid { display: flex; align-items: center; gap: 24px; }
+.csk-wrap { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.csk-box { display: grid; gap: 4px; padding: 12px; background: #fff; border: 1px solid var(--rule); border-radius: 10px; box-shadow: 0 1px 3px rgba(38,41,46,0.05); }
+.csk-cell { width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-size: 13px; color: var(--ink); border-radius: 4px; background: #F3F1EB; }
+.csk-cell.pos { background: rgba(78,122,148,0.18); }
+.csk-cell.neg { background: rgba(193,102,107,0.18); }
+/* per-row estimates; hidden at depth 1 so the slide opens identical to the last one */
+.csk-rows { display: flex; flex-direction: column; gap: 4px; }
+.csk-rowest { height: 34px; min-width: 46px; display: flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-size: 13px; color: var(--muted); }
+.csk-est { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+/* steppers: a number flanked by - and + */
+.csk-steppers { display: flex; justify-content: center; gap: 44px; }
+.stepper { display: flex; align-items: center; gap: 10px; font-family: var(--font-label); font-size: 0.55em; }
+.stepper-label { color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; }
+.step-btn { font-family: var(--font-label); font-weight: 600; font-size: 1em; line-height: 1; width: 26px; height: 26px; border: none; border-radius: 6px; background: var(--slate); color: #fff; cursor: pointer; }
+.step-btn:disabled { background: var(--rule); cursor: default; }
+.step-val { font-family: var(--font-mono); font-size: 1.35em; color: var(--ink); min-width: 16px; text-align: center; }
+
+/* ---- per-colour estimate boxes: f_hat = s(colour) * Z. Outline colour comes
+   from an inline --ec so all three share one rule; white fill lifts the light
+   pastel borders off the cream paper. ---- */
+.est-row  { display: flex; justify-content: center; gap: 26px; margin-top: 1.1em; }
+.est      { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 230px; border: 2px solid var(--ec); border-radius: 10px; padding: 10px 18px; background: #fff; }
+/* reserves the estimate row's height on the previous slide so the figure
+   does not shift when the boxes arrive (center:true re-centres the block) */
+.est-ghost { visibility: hidden; }
+.est-eq   { font-family: var(--font-mono); font-size: 0.7em; color: var(--ink); }
+.est-val  { font-size: 1.2em; color: var(--slate); }
+.est-true { font-family: var(--font-label); font-size: 0.48em; color: var(--muted); }
 
 /* ---- tables ---- */
 .reveal table { border-collapse: collapse; font-size: 0.72em; margin: 0.4em 0; }
@@ -150,6 +400,7 @@
 .agenda li::before { content: counter(ag, decimal-leading-zero); font-family: var(--font-mono); color: var(--slate); font-size: 0.7em; min-width: 2.2em; }
 .agenda li.mine { color: var(--clay); font-weight: 600; }
 .agenda li.mine::before { color: var(--clay); }
+.agenda .agenda-note { display: block; font-family: var(--font-label); font-size: 0.72em; color: var(--muted); margin-top: 4px; }
 
 /* ---- title ---- */
 .title-slide h1 { font-size: 2.3em; line-height: 1.08; margin: 0; }
@@ -166,6 +417,71 @@
 .reveal .fragment.draw.visible path, .reveal .fragment.draw.visible line { stroke-dashoffset: 0; transition: stroke-dashoffset 0.7s ease; }
 .arrow-svg path, .arrow-svg line { stroke: var(--slate); stroke-width: 3; fill: none; }
 .arrow-svg .head { fill: var(--slate); stroke: none; }
+
+/* ---- JOB / IMDb schema graph ----------------------------------------------
+   Uniform 6x5 grid; every node is DEFINITELY PLACED (grid-row + grid-column),
+   so auto-placement never runs and cannot be blocked by a placed sibling
+   (the .row-hl lesson). Cells are fixed-size (1fr columns + grid-auto-rows),
+   never content-sized: the edge layout below was verified against exactly this
+   geometry, and fixed cells also mean it is settled before the webfonts swap.
+
+   `title` spans TWO ROWS. That is load-bearing, not decoration: it has nine
+   neighbours and a unit grid cell has only eight, so with every node in a
+   single cell one edge is always forced two cells away and cuts straight
+   through whatever sits between. Spanning gives title ten adjacent cells.
+   With this placement, all 23 edges were checked against all 21 boxes: zero
+   crossings, tightest clearance ~14px.
+
+   Edges are drawn behind the boxes by raising the nodes (z-index on
+   .schema-node), never by sinking the SVG below 0 -- a negative z-index would
+   put it behind any ancestor that paints a background. */
+.schema-graph { position: relative; display: grid; grid-template-columns: repeat(6, 1fr); grid-auto-rows: 66px; gap: 18px 26px; width: 980px; margin: 0.2em auto 0; }
+.schema-edges { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.schema-edges line { stroke: var(--rule); stroke-width: 1.5; }
+.schema-node {
+  position: relative; z-index: 1; box-sizing: border-box;
+  padding: 8px 4px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+  background: #fff; border: 1px solid var(--rule); border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(38,41,46,0.05);
+}
+.schema-node .tname { font-family: var(--font-mono); font-size: 12px; color: var(--ink); line-height: 1.15; }
+.schema-node .trows { font-family: var(--font-mono); font-weight: 600; font-size: 15px; color: var(--slate); line-height: 1.2; }
+.schema-node .tcols { font-family: var(--font-label); font-size: 10px; letter-spacing: 0.04em; color: var(--muted); }
+/* size tiers by row count: >=1M / >=1k / <1k */
+.schema-node.t-md .trows { font-size: 13px; }
+.schema-node.t-sm { background: #F6F4EF; }
+.schema-node.t-sm .trows { font-size: 12px; color: var(--muted); font-weight: 400; }
+.schema-node.t-sm .tname, .schema-node.t-sm .tcols { color: var(--muted); }
+.schema-node.hub { border: 1.5px solid var(--slate); box-shadow: 0 2px 6px rgba(62,92,118,0.14); }
+.schema-node.hub .tname { font-weight: 600; }
+.schema-node.hub .trows { font-size: 17px; }
+
+/* ---- JOB runtime comparison ------------------------------------------------
+   The dataviz "emphasis" form: one series is the point (clay, ours), the other
+   is context (slate). Not a categorical palette -- so slate sitting below the
+   chroma floor is correct here, the context series is meant to recede. Both
+   bars are direct-labelled, so identity never rests on colour alone.
+   Zero-based linear scale; widths come from data-hours via layoutRuntimeBars,
+   never from hand-measured pixels, so a bar can never disagree with its label. */
+.runbars { display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: 22px 24px; width: 900px; margin: 0.2em auto 0; }
+.runbar-name { font-family: var(--font-label); font-size: 17px; font-weight: 600; color: var(--ink); text-align: right; line-height: 1.25; }
+.runbar-name .sub { display: block; font-weight: 400; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-top: 2px; }
+.runbar-name.is-ours .sub { color: var(--clay); }
+.runbar-track { position: relative; height: 32px; border-bottom: 1px solid var(--rule); }
+.runbar-fill { height: 32px; width: 0; border-radius: 0 4px 4px 0; background: var(--slate); }
+.runbar-fill.is-ours { background: var(--clay); }
+/* beat `.reveal .fragment{transition:all .2s}` (0,2,0) with (0,3,0) -- same
+   specificity trap as .fly */
+.reveal .fragment.runbar-grow { transition: width 0.8s cubic-bezier(.22,.61,.36,1); }
+.reveal .fragment.runbar-grow.visible { width: var(--w, 0%); }
+.runbar-val { font-family: var(--font-mono); font-size: 21px; font-weight: 600; color: var(--ink); text-align: right; min-width: 124px; }
+.runbar-avg { font-family: var(--font-mono); font-size: 15px; color: var(--muted); text-align: right; min-width: 62px; }
+.runbar-head { font-family: var(--font-label); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); text-align: right; }
+/* The one hero figure on the slide. Mono rather than the skill's sans, because
+   this deck's standing convention is that every number is mono. */
+.runbar-hero { font-family: var(--font-mono); font-size: 52px; font-weight: 700; color: var(--clay); line-height: 1; }
+.runbar-hero-lab { font-family: var(--font-label); font-size: 18px; letter-spacing: 0.04em; color: var(--ink); margin-left: 14px; }
 
 /* ---- chrome ---- */
 .reveal .slide-number { background: transparent; color: var(--muted); font-family: var(--font-mono); }
@@ -194,31 +510,24 @@
       </div>
     </section>
 
+    
+    <section><div class="eyebrow">About Me</div><h2>Who I am</h2><hr class="rule"><p class="caption">TODO &mdash; condensed, ML/CV-legible self-intro.</p></section>
+
+
     <!-- ===== AGENDA ===== -->
     <section>
-      <div class="eyebrow">Roadmap</div>
+      <div class="eyebrow">Overview</div>
       <h2>What we'll cover</h2>
       <hr class="rule">
-      <ol class="agenda" style="font-size: 0.82em;">
-        <li>Who I am</li>
-        <li>What is sketching?</li>
-        <li>The tug-of-war sketch</li>
-        <li>Sketching the size of a join</li>
-        <li>Where it breaks down</li>
-        <li class="mine">Generative sketching &mdash; my work</li>
-        <li>Results: 10&times; faster than PostgreSQL on JOB</li>
-        <li>Conclusion</li>
+      <!-- .agenda li is display:flex, so the title and its note must be ONE flex
+           item -- hence the wrapping <span>. A bare text node plus a sibling span
+           would sit side by side on the same row instead of stacking. -->
+      <ol class="agenda">
+        <li><span>What is sketching?<span class="agenda-note">join size &middot; inner products &middot; embedding distributions</span></span></li>
+        <li>Tug-of-War Sketch</li>
+        <li class="mine">Generative Sketching &mdash; my work</li>
+        <li>Results: 8.6&times; faster than PostgreSQL on JOB</li>
       </ol>
-    </section>
-
-    <!-- ===== SECTION DIVIDER — reusable template =====
-         Copy this for each new section. Two consecutive dividers with
-         data-auto-animate will morph the number + title between them. -->
-    <section class="section-divider" data-auto-animate>
-      <div class="num" data-id="secnum">01</div>
-      <div class="kicker">Section</div>
-      <h1 data-id="sectitle">Section title</h1>
-      <p class="caption" style="margin-top:0.6em;">One-line framing of what this section does.</p>
     </section>
 
     <!-- ============================================================
@@ -227,34 +536,1619 @@
          more; nest <section>s for a vertical/down stack).
          ============================================================ -->
 
-    <section><div class="eyebrow">1 &middot; Introduction</div><h2>Who I am</h2><hr class="rule"><p class="caption">TODO &mdash; condensed, ML/CV-legible self-intro.</p></section>
+    <section>
+      <section class="section-divider" data-auto-animate>
+        <div class="num" data-id="secnum">01</div>
+        <div class="kicker">Section</div>
+        <h1 data-id="sectitle">What is sketching?</h1>
+        <p class="caption" style="margin-top:0.6em;">Sublinear summaries, and the three questions they answer.</p>
+      </section>
+    
+      <section><div class="eyebrow">1 &middot; Definition</div><h2>What is sketching?</h2><hr class="rule">
+        <p class="caption">TODO &mdash; definition (sublinear summaries) + three example applications:</p>
+        <ul style="font-size:0.8em;">
+          <li><strong>Join sizes</strong> &mdash; used in relational database systems (our focus)</li>
+          <li><strong>Inner products</strong></li>
+          <li><strong>Embedding distributions</strong></li>
+        </ul>
+      </section>
 
-    <section><div class="eyebrow">2 &middot; Foundations</div><h2>What is sketching?</h2><hr class="rule">
-      <p class="caption">TODO &mdash; definition (sublinear summaries) + three example applications:</p>
-      <ul style="font-size:0.8em;">
-        <li><strong>Inner products</strong> &mdash; TurboQuant / QJL sign bits in LLM KV-caches</li>
-        <li><strong>Embedding distributions</strong> &mdash; LeJEPA / SIGReg random 1D projections</li>
-        <li><strong>Join sizes</strong> &mdash; the database case (our focus)</li>
-      </ul>
+      <section data-auto-animate data-auto-animate-unmatched="false"><div class="eyebrow">1 &middot; Definition</div><h2>Join Size Estimation</h2><hr class="rule">
+        <p class="caption">TODO &mdash; define join size estimation and set up an example problem</p>
+        <div class="relation-diagram">
+          <div class="relation" data-tbl="1">
+            <div class="relation-bg"></div>
+            <div class="relation-title">Table 1</div>
+            <div class="relation-rows">
+              <span class="dot" data-row="t1-0" data-color="blue" style="background:var(--blue)"></span>
+              <span class="dot" data-row="t1-1" data-color="red" style="background:var(--red)"></span>
+              <span class="dot" data-row="t1-2" data-color="green" style="background:var(--green)"></span>
+              <span class="dot" data-row="t1-3" data-color="blue" style="background:var(--blue)"></span>
+            </div>
+          </div>
+          <div class="relation" data-tbl="2">
+            <div class="relation-bg"></div>
+            <div class="relation-title">Table 2</div>
+            <div class="relation-rows">
+              <span class="dot" data-row="t2-0" data-color="red" style="background:var(--red)"></span>
+              <span class="dot" data-row="t2-1" data-color="green" style="background:var(--green)"></span>
+              <span class="dot" data-row="t2-2" data-color="blue" style="background:var(--blue)"></span>
+              <span class="dot" data-row="t2-3" data-color="green" style="background:var(--green)"></span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section data-auto-animate data-auto-animate-unmatched="false">
+        <div class="eyebrow">1 &middot; Definition</div><h2 data-id="h-nlj">Nested-Loop Join</h2><hr class="rule">
+        <p class="caption">Compare every Table&nbsp;1 row against every Table&nbsp;2 row; a line marks a match.</p>
+        <div class="relation-diagram">
+          <div class="relation" data-tbl="1">
+            <div class="relation-bg" data-id="tbl1-bg"></div>
+            <div class="relation-title" data-id="tbl1-title">Table 1</div>
+            <!-- ADDED DATA-ID HERE -->
+            <div class="relation-rows">
+              <span class="dot" data-row="t1-0" data-color="blue" data-id="res-0-t1" style="background:var(--blue)"></span>
+              <span class="dot" data-row="t1-1" data-color="red" data-id="res-1-t1" style="background:var(--red)"></span>
+              <span class="dot" data-row="t1-2" data-color="green" data-id="res-2-t1" style="background:var(--green)"></span>
+              <span class="dot dot-dup" data-id="res-3-t1" style="background:var(--green)"></span>
+              <span class="dot" data-row="t1-3" data-color="blue" data-id="res-4-t1" style="background:var(--blue)"></span>
+            </div>
+          </div>
+          <div class="relation" data-tbl="2">
+            <div class="relation-bg" data-id="tbl2-bg"></div>
+            <div class="relation-title" data-id="tbl2-title">Table 2</div>
+            <!-- ADDED DATA-ID HERE -->
+            <div class="relation-rows">
+              <span class="dot" data-row="t2-0" data-color="red" data-id="res-1-t2" style="background:var(--red)"></span>
+              <span class="dot" data-row="t2-1" data-color="green" data-id="res-2-t2" style="background:var(--green)"></span>
+              <span class="dot" data-row="t2-2" data-color="blue" data-id="res-0-t2" style="background:var(--blue)"></span>
+              <span class="dot dot-dup" data-id="res-4-t2" style="background:var(--blue)"></span>
+              <span class="dot" data-row="t2-3" data-color="green" data-id="res-3-t2" style="background:var(--green)"></span>
+            </div>
+          </div>
+          <svg class="join-lines-overlay">
+            <g class="fragment draw" data-from="t1-0" data-to="t2-2"><line></line></g>
+            <g class="fragment draw" data-from="t1-1" data-to="t2-0"><line></line></g>
+            <g class="fragment draw" data-from="t1-2" data-to="t2-1"><line></line></g>
+            <g class="fragment draw" data-from="t1-2" data-to="t2-3"><line></line></g>
+            <g class="fragment draw" data-from="t1-3" data-to="t2-2"><line></line></g>
+          </svg>
+        </div>
+        <p class="fragment caption" style="margin-top:0.8em; text-align:center;">\( |T_1 \Join T_2| = 5 \)</p>
+      </section>
+
+      <!-- Only the two .relation boxes are matched (data-id tbl1/tbl2): Reveal writes
+           each matched element's ABSOLUTE delta as a transform, so matching nested
+           levels would compound. unmatched="false" keeps the unmatched dots from
+           fading in from opacity:0. -->
+      <section data-auto-animate data-auto-animate-duration="1.2" data-auto-animate-unmatched="false">
+        <div class="eyebrow">1 &middot; Definition</div><h2 data-id="h-result">The Join Result</h2><hr class="rule">
+        <p class="caption">Each match merges into one result row.</p>
+        <div class="relation-diagram merged">
+          <div class="relation" data-tbl="1">
+            <div class="relation-bg" data-id="tbl1-bg"></div>
+            <div class="relation-title" data-id="tbl1-title">T1 &#8904; T2</div>
+            <!-- ADDED DATA-ID HERE -->
+            <div class="relation-rows">
+              <span class="dot" data-id="res-0-t1" style="background:var(--blue)"></span>
+              <span class="dot" data-id="res-1-t1" style="background:var(--red)"></span>
+              <span class="dot" data-id="res-2-t1" style="background:var(--green)"></span>
+              <span class="dot" data-id="res-3-t1" style="background:var(--green)"></span>
+              <span class="dot" data-id="res-4-t1" style="background:var(--blue)"></span>
+            </div>
+          </div>
+          <div class="relation" data-tbl="2">
+            <div class="relation-bg" data-id="tbl2-bg"></div>
+            <div class="relation-title" data-id="tbl2-title">T1 &#8904; T2</div>
+            <!-- ADDED DATA-ID HERE -->
+            <div class="relation-rows">
+              <span class="dot" data-id="res-0-t2" style="background:var(--blue)"></span>
+              <span class="dot" data-id="res-1-t2" style="background:var(--red)"></span>
+              <span class="dot" data-id="res-2-t2" style="background:var(--green)"></span>
+              <span class="dot" data-id="res-3-t2" style="background:var(--green)"></span>
+              <span class="dot" data-id="res-4-t2" style="background:var(--blue)"></span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section data-auto-animate data-auto-animate-unmatched="false" data-auto-animate-restart><div class="eyebrow">1 &middot; Definition</div><h2>Join Size Sketching</h2><hr class="rule">
+        <p class="caption">Project each table through the same sketching matrix &mdash; 4 rows down to 2.</p>
+        <div class="relation-diagram inner-product">
+          <!-- data-ids reverse the merge: the joined box splits back into the two
+               source tables. The dup dots (res-3-t1 / res-4-t2) have no counterpart
+               here and simply drop. Matrices are fragments so they don't pop in
+               mid-glide; .sketch-group carries no data-id, preserving the rule that
+               no matched element may be an ancestor of another.
+               Fragments step: 1 = the two sketch projections, 2 = the angle
+               brackets + comma that make it an inner product, 3 = the note. -->
+          <div class="angle fragment" data-fragment-index="2">&#10216;</div>
+          <div class="sketch-group">
+            <div class="relation" data-tbl="1">
+              <div class="relation-bg" data-id="tbl1-bg"></div>
+              <div class="relation-title" data-id="tbl1-title">Table 1</div>
+              <div class="relation-rows">
+                <span class="dot" data-row="t1-0" data-color="blue" data-id="res-0-t1" style="background:var(--blue)"></span>
+                <span class="dot" data-row="t1-1" data-color="red" data-id="res-1-t1" style="background:var(--red)"></span>
+                <span class="dot" data-row="t1-2" data-color="green" data-id="res-2-t1" style="background:var(--green)"></span>
+                <span class="dot" data-row="t1-3" data-color="blue" data-id="res-4-t1" style="background:var(--blue)"></span>
+              </div>
+            </div>
+            <div class="projop fragment" data-fragment-index="1">&sdot;</div>
+            <div class="matrix fragment" data-fragment-index="1">
+              <div class="matrix-grid">
+                <div class="matrix-cell"></div><div class="matrix-cell"></div>
+                <div class="matrix-cell"></div><div class="matrix-cell"></div>
+                <div class="matrix-cell"></div><div class="matrix-cell"></div>
+                <div class="matrix-cell"></div><div class="matrix-cell"></div>
+              </div>
+              <div class="matrix-label">4&times;2</div>
+            </div>
+          </div>
+
+          <div class="ipcomma fragment" data-fragment-index="2">,</div>
+
+          <div class="sketch-group">
+            <div class="relation" data-tbl="2">
+              <div class="relation-bg" data-id="tbl2-bg"></div>
+              <div class="relation-title" data-id="tbl2-title">Table 2</div>
+              <div class="relation-rows">
+                <span class="dot" data-row="t2-0" data-color="red" data-id="res-1-t2" style="background:var(--red)"></span>
+                <span class="dot" data-row="t2-1" data-color="green" data-id="res-2-t2" style="background:var(--green)"></span>
+                <span class="dot" data-row="t2-2" data-color="blue" data-id="res-0-t2" style="background:var(--blue)"></span>
+                <span class="dot" data-row="t2-3" data-color="green" data-id="res-3-t2" style="background:var(--green)"></span>
+              </div>
+            </div>
+            <div class="projop fragment" data-fragment-index="1">&sdot;</div>
+            <div class="matrix fragment" data-fragment-index="1">
+              <div class="matrix-grid">
+                <div class="matrix-cell"></div><div class="matrix-cell"></div>
+                <div class="matrix-cell"></div><div class="matrix-cell"></div>
+                <div class="matrix-cell"></div><div class="matrix-cell"></div>
+                <div class="matrix-cell"></div><div class="matrix-cell"></div>
+              </div>
+              <div class="matrix-label">4&times;2</div>
+            </div>
+          </div>
+          <div class="angle fragment" data-fragment-index="2">&#10217;</div>
+        </div>
+        <p class="ip-note fragment" data-fragment-index="3">This inner product approximates the join size \( |T_1 \Join T_2| \).</p>
+      </section>
+
+      <section data-auto-animate data-auto-animate-unmatched="false"><div class="eyebrow">1 &middot; Definition</div><h2>Inner Product Sketching</h2><hr class="rule">
+        <p class="caption">Project each N-dimensional vector through the same sketching matrix.</p>
+        <div class="relation-diagram inner-product">
+          <!-- Auto-animates from the tables: each .relation-bg morphs into a .vec-bg
+               bracket pair, each .relation-title into the x_i label, and the coloured
+               dots into the vector entries (circle -> rounded square, colour -> slate).
+               Each table's 3rd dot has no counterpart and drops -- which is exactly
+               what the .gdots ellipsis means. .vec-bg is a SIBLING of the grid so no
+               matched element is an ancestor of another.
+               Fragments step: 1 = the two sketch projections, 2 = the angle
+               brackets + comma that make it an inner product, 3 = the note. -->
+          <div class="angle fragment" data-fragment-index="2">&#10216;</div>
+          <div class="sketch-group">
+            <div class="vector">
+              <div class="vec-frame">
+                <div class="vec-bg" data-id="tbl1-bg"></div>
+                <div class="matrix-grid vec">
+                <div class="matrix-cell" data-id="res-0-t1"></div>
+                <div class="matrix-cell" data-id="res-1-t1"></div>
+                <div class="gdots">&#8942;</div>
+                <div class="matrix-cell" data-id="res-4-t1"></div>
+                </div>
+              </div>
+              <div class="matrix-label" data-id="tbl1-title">N</div>
+            </div>
+            <div class="projop fragment" data-fragment-index="1">&sdot;</div>
+            <div class="matrix fragment" data-fragment-index="1">
+              <div class="matrix-grid">
+                <div class="matrix-cell"></div><div class="matrix-cell"></div>
+                <div class="matrix-cell"></div><div class="matrix-cell"></div>
+                <div class="gdots">&#8942;</div>
+                <div class="matrix-cell"></div><div class="matrix-cell"></div>
+              </div>
+              <div class="matrix-label">N&times;2</div>
+            </div>
+          </div>
+
+          <div class="ipcomma fragment" data-fragment-index="2">,</div>
+
+          <div class="sketch-group">
+            <div class="vector">
+              <div class="vec-frame">
+                <div class="vec-bg" data-id="tbl2-bg"></div>
+                <div class="matrix-grid vec">
+                <div class="matrix-cell" data-id="res-1-t2"></div>
+                <div class="matrix-cell" data-id="res-2-t2"></div>
+                <div class="gdots">&#8942;</div>
+                <div class="matrix-cell" data-id="res-3-t2"></div>
+                </div>
+              </div>
+              <div class="matrix-label" data-id="tbl2-title">N</div>
+            </div>
+            <div class="projop fragment" data-fragment-index="1">&sdot;</div>
+            <div class="matrix fragment" data-fragment-index="1">
+              <div class="matrix-grid">
+                <div class="matrix-cell"></div><div class="matrix-cell"></div>
+                <div class="matrix-cell"></div><div class="matrix-cell"></div>
+                <div class="gdots">&#8942;</div>
+                <div class="matrix-cell"></div><div class="matrix-cell"></div>
+              </div>
+              <div class="matrix-label">N&times;2</div>
+            </div>
+          </div>
+          <div class="angle fragment" data-fragment-index="2">&#10217;</div>
+        </div>
+        <p class="ip-note fragment" data-fragment-index="3">\( \langle S^\top x_1,\, S^\top x_2 \rangle \approx \langle x_1, x_2 \rangle \)</p>
+      </section>
+
+      <section data-auto-animate data-auto-animate-unmatched="false"><div class="eyebrow">1 &middot; Definition</div><h2>Embedding Distribution</h2><hr class="rule">
+        <p class="caption">TODO &mdash; &plusmn; LeJEPA uses Sketched Isotropic Gaussian Regularization</p>
+        <!-- https://github.com/galilai-group/lejepa/tree/mainw -->
+      </section>
     </section>
 
-    <section><div class="eyebrow">3 &middot; The classic sketch</div><h2>The tug-of-war sketch</h2><hr class="rule"><p class="caption">TODO &mdash; &plusmn;1 estimator + interactive demo.</p></section>
+    <section>
+      <section class="section-divider" data-auto-animate>
+        <div class="num" data-id="secnum">02</div>
+        <div class="kicker">Section</div>
+        <h1 data-id="sectitle">Tug-of-War Sketch</h1>
+        <p class="caption" style="margin-top:0.6em;">Random signs, one counter, and an unbiased estimate.</p>
+      </section>
 
-    <section><div class="eyebrow">4 &middot; Application</div><h2>Sketching the size of a join</h2><hr class="rule"><p class="caption">TODO &mdash; how tug-of-war estimates join size (DB part kept light).</p></section>
+      <section><div class="eyebrow">2 &middot; Preliminary Foundations</div><h2>Frequency estimation</h2><hr class="rule">
+        <p class="caption">Every item pulls the counter one way or the other.</p>
+        <!-- Signs are +1/-1 for every colour (never 0: a zero sign would make that
+             colour's estimate identically zero and break unbiasedness).
+             Steps 1-6 fly each stream item to its pile - right for +1, left for -1 -
+             while the counter swaps value via .current-visible (initial 0 on
+             .fade-out); the FINAL value is a plain fragment, not current-visible,
+             so it survives once step 7 becomes the current fragment.
+             The dots carry Reveal's `custom` class so they are NOT
+             hidden before their step; the step only applies the transform that
+             layoutTugOfWar() precomputed into --fx/--fy. -->
+        <div class="tow">
+          <div class="relation" data-tbl="1">
+            <div class="relation-bg"></div>
+            <div class="relation-title">Stream</div>
+            <div class="relation-rows">
+              <span class="stream-slot"><span class="dot" style="background:var(--red)"></span><span class="dot fly fragment custom" data-fragment-index="1" data-slot="p0" style="background:var(--red)"><span class="sgn">+</span></span></span>
+              <span class="stream-slot"><span class="dot" style="background:var(--green)"></span><span class="dot fly fragment custom" data-fragment-index="2" data-slot="m0" style="background:var(--green)"><span class="sgn">&minus;</span></span></span>
+              <span class="stream-slot"><span class="dot" style="background:var(--red)"></span><span class="dot fly fragment custom" data-fragment-index="3" data-slot="p1" style="background:var(--red)"><span class="sgn">+</span></span></span>
+              <span class="stream-slot"><span class="dot" style="background:var(--blue)"></span><span class="dot fly fragment custom" data-fragment-index="4" data-slot="p2" style="background:var(--blue)"><span class="sgn">+</span></span></span>
+              <span class="stream-slot"><span class="dot" style="background:var(--green)"></span><span class="dot fly fragment custom" data-fragment-index="5" data-slot="m1" style="background:var(--green)"><span class="sgn">&minus;</span></span></span>
+              <span class="stream-slot"><span class="dot" style="background:var(--red)"></span><span class="dot fly fragment custom" data-fragment-index="6" data-slot="p3" style="background:var(--red)"><span class="sgn">+</span></span></span>
+            </div>
+          </div>
+            <div class="tow-arena">
+              <div class="pile minus">
+                <div class="pile-slot" data-slot="m0"></div>
+                <div class="pile-slot" data-slot="m1"></div>
+                <div class="pile-slot" data-slot="m2"></div>
+                <div class="pile-slot" data-slot="m3"></div>
+                <div class="pile-slot" data-slot="m4"></div>
+                <div class="pile-slot" data-slot="m5"></div>
+              </div>
+              <div class="counter-box">
+                <span class="cval fragment fade-out" data-fragment-index="1">0</span>
+                <span class="cval fragment current-visible" data-fragment-index="1">1</span>
+                <span class="cval fragment current-visible" data-fragment-index="2">0</span>
+                <span class="cval fragment current-visible" data-fragment-index="3">1</span>
+                <span class="cval fragment current-visible" data-fragment-index="4">2</span>
+                <span class="cval fragment current-visible" data-fragment-index="5">1</span>
+                <span class="cval fragment" data-fragment-index="6">2</span>
+              </div>
+              <div class="pile plus">
+                <div class="pile-slot" data-slot="p0"></div>
+                <div class="pile-slot" data-slot="p1"></div>
+                <div class="pile-slot" data-slot="p2"></div>
+                <div class="pile-slot" data-slot="p3"></div>
+                <div class="pile-slot" data-slot="p4"></div>
+                <div class="pile-slot" data-slot="p5"></div>
+              </div>
+            </div>
+        </div>
+        <!-- Spacer only: reserves the exact height of the estimate row on the next
+             slide so the figure keeps its position. visibility:hidden (not display:none)
+             keeps it in flow; no fragment classes, or it would add phantom steps. -->
+        <div class="est-row est-ghost" aria-hidden="true">
+          <div class="est" style="--ec:var(--red)">
+            <span class="dot" style="background:var(--red)"></span>
+            <div class="est-eq">(+1) &sdot; 2 = <strong class="est-val">2</strong></div>
+            <div class="est-true">true 3</div>
+          </div>
+          <div class="est" style="--ec:var(--green)">
+            <span class="dot" style="background:var(--green)"></span>
+            <div class="est-eq">(&minus;1) &sdot; 2 = <strong class="est-val">&minus;2</strong></div>
+            <div class="est-true">true 2</div>
+          </div>
+          <div class="est" style="--ec:var(--blue)">
+            <span class="dot" style="background:var(--blue)"></span>
+            <div class="est-eq">(+1) &sdot; 2 = <strong class="est-val">2</strong></div>
+            <div class="est-true">true 1</div>
+          </div>
+        </div>
+        <p class="ip-note fragment" data-fragment-index="7">Each item pulls the counter one way. Net: \( Z = \sum_i s(x_i) = 2 \). How many were red?</p>
+      </section>
 
-    <section><div class="eyebrow">5 &middot; Limitation</div><h2>Where it breaks down</h2><hr class="rule"><p class="caption">TODO &mdash; curse of dimensionality / multivariate tables.</p></section>
+      <section><div class="eyebrow">2 &middot; Preliminary Foundations</div><h2>Estimating each count</h2><hr class="rule">
+        <p class="caption">Multiply the counter by that colour's own sign.</p>
+        <!-- The end state of the previous slide, authored statically: no fragments,
+             no data-ids. The preceding section has no data-auto-animate and the deck
+             uses transition:'fade', so an identical layout simply crossfades and the
+             figure does not move. Only the estimate row below is new. -->
+        <div class="tow">
+          <div class="relation" data-tbl="1">
+            <div class="relation-bg"></div>
+            <div class="relation-title">Stream</div>
+            <div class="relation-rows">
+              <span class="dot" style="background:var(--red)"></span>
+              <span class="dot" style="background:var(--green)"></span>
+              <span class="dot" style="background:var(--red)"></span>
+              <span class="dot" style="background:var(--blue)"></span>
+              <span class="dot" style="background:var(--green)"></span>
+              <span class="dot" style="background:var(--red)"></span>
+            </div>
+          </div>
+          <div class="tow-arena">
+            <div class="pile minus">
+                <span class="dot signed" style="background:var(--green)"><span class="sgn">&minus;</span></span>
+                <span class="dot signed" style="background:var(--green)"><span class="sgn">&minus;</span></span>
+                <div class="pile-slot"></div>
+                <div class="pile-slot"></div>
+                <div class="pile-slot"></div>
+                <div class="pile-slot"></div>
+            </div>
+            <div class="counter-box">
+              <span class="cval">2</span>
+            </div>
+            <div class="pile plus">
+                <span class="dot signed" style="background:var(--red)"><span class="sgn">+</span></span>
+                <span class="dot signed" style="background:var(--red)"><span class="sgn">+</span></span>
+                <span class="dot signed" style="background:var(--blue)"><span class="sgn">+</span></span>
+                <span class="dot signed" style="background:var(--red)"><span class="sgn">+</span></span>
+                <div class="pile-slot"></div>
+                <div class="pile-slot"></div>
+            </div>
+          </div>
+        </div>
+        <div class="est-row">
+          <div class="est fragment" data-fragment-index="1" style="--ec:var(--red)">
+            <span class="dot" style="background:var(--red)"></span>
+            <div class="est-eq">(+1) &sdot; 2 = <strong class="est-val">2</strong></div>
+            <div class="est-true">true 3</div>
+          </div>
+          <div class="est fragment" data-fragment-index="2" style="--ec:var(--green)">
+            <span class="dot" style="background:var(--green)"></span>
+            <div class="est-eq">(&minus;1) &sdot; 2 = <strong class="est-val">&minus;2</strong></div>
+            <div class="est-true">true 2</div>
+          </div>
+          <div class="est fragment" data-fragment-index="3" style="--ec:var(--blue)">
+            <span class="dot" style="background:var(--blue)"></span>
+            <div class="est-eq">(+1) &sdot; 2 = <strong class="est-val">2</strong></div>
+            <div class="est-true">true 1</div>
+          </div>
+        </div>
+        <p class="ip-note slide-foot fragment" data-fragment-index="4">Unbiased on average &mdash; but a single counter can be far off, even negative. The fix: average many.</p>
+      </section>
 
-    <section><div class="eyebrow">6 &middot; My work</div><h2 style="color:var(--clay);">Generative sketching</h2><hr class="rule" style="background:var(--clay);"><p class="caption">TODO &mdash; generative models learn the distribution, generate sketches.</p></section>
+      <section><div class="eyebrow">2 &middot; Preliminary Foundations</div><h2>Averaging many games</h2><hr class="rule">
+        <p class="caption">Re-draw the signs each round; every round is an independent estimate.</p>
+        <!-- Interactive: driven by twRound() on a timer, NOT by fragments. Signs come
+             from a genuinely pairwise-independent hash (degree-1 polynomial over the
+             Mersenne field 2^61-1), redrawn every round. Both piles reserve 6 slots so
+             the counter never shifts as the split changes. -->
+        <div class="tow" id="tw-fig">
+          <div class="relation" data-tbl="1">
+            <div class="relation-bg"></div>
+            <div class="relation-title">Stream</div>
+            <div class="relation-rows">
+              <span class="stream-slot"><span class="dot" style="background:var(--red)"></span><span class="dot tw-dot" data-color="red" style="background:var(--red)"><span class="sgn"></span></span></span>
+              <span class="stream-slot"><span class="dot" style="background:var(--green)"></span><span class="dot tw-dot" data-color="green" style="background:var(--green)"><span class="sgn"></span></span></span>
+              <span class="stream-slot"><span class="dot" style="background:var(--red)"></span><span class="dot tw-dot" data-color="red" style="background:var(--red)"><span class="sgn"></span></span></span>
+              <span class="stream-slot"><span class="dot" style="background:var(--blue)"></span><span class="dot tw-dot" data-color="blue" style="background:var(--blue)"><span class="sgn"></span></span></span>
+              <span class="stream-slot"><span class="dot" style="background:var(--green)"></span><span class="dot tw-dot" data-color="green" style="background:var(--green)"><span class="sgn"></span></span></span>
+              <span class="stream-slot"><span class="dot" style="background:var(--red)"></span><span class="dot tw-dot" data-color="red" style="background:var(--red)"><span class="sgn"></span></span></span>
+            </div>
+          </div>
+          <div class="tow-arena">
+            <div class="pile minus">
+                <div class="pile-slot" data-slot="m0"></div>
+                <div class="pile-slot" data-slot="m1"></div>
+                <div class="pile-slot" data-slot="m2"></div>
+                <div class="pile-slot" data-slot="m3"></div>
+                <div class="pile-slot" data-slot="m4"></div>
+                <div class="pile-slot" data-slot="m5"></div>
+            </div>
+            <div class="counter-box">
+              <span class="cval" id="tw-z">0</span>
+            </div>
+            <div class="pile plus">
+                <div class="pile-slot" data-slot="p0"></div>
+                <div class="pile-slot" data-slot="p1"></div>
+                <div class="pile-slot" data-slot="p2"></div>
+                <div class="pile-slot" data-slot="p3"></div>
+                <div class="pile-slot" data-slot="p4"></div>
+                <div class="pile-slot" data-slot="p5"></div>
+            </div>
+            <!-- Premise of the correctness proof. Absolutely positioned, so it adds no
+                 height and cannot shift the figure relative to the previous slide. -->
+            <div class="tw-math">
+              <div class="fragment" data-fragment-index="1">\( \xi:\ [N] \to \{-1, +1\} \)</div>
+              <div class="fragment" data-fragment-index="2">\( \mathbb{E}\left[\xi(i)\,\xi(j)\right] = \begin{cases} 1, & i = j \\ 0, & i \neq j \end{cases} \)</div>
+            </div>
+          </div>
+        </div>
+        <div class="est-row">
+          <div class="est" style="--ec:var(--red)">
+            <span class="dot" style="background:var(--red)"></span>
+            <div class="est-avg">avg <strong class="est-val" data-tw-avg="red">&mdash;</strong></div>
+            <div class="est-true">true 3</div>
+          </div>
+          <div class="est" style="--ec:var(--green)">
+            <span class="dot" style="background:var(--green)"></span>
+            <div class="est-avg">avg <strong class="est-val" data-tw-avg="green">&mdash;</strong></div>
+            <div class="est-true">true 2</div>
+          </div>
+          <div class="est" style="--ec:var(--blue)">
+            <span class="dot" style="background:var(--blue)"></span>
+            <div class="est-avg">avg <strong class="est-val" data-tw-avg="blue">&mdash;</strong></div>
+            <div class="est-true">true 1</div>
+          </div>
+        </div>
+        <div class="tw-controls slide-foot">
+          <button class="tw-btn" id="tw-play" type="button">Play</button>
+          <button class="tw-btn tw-ghost" id="tw-reset" type="button">Reset</button>
+          <span class="tw-round">round <strong id="tw-n">0</strong></span>
+        </div>
+      </section>
 
-    <section><div class="eyebrow">7 &middot; Results</div><h2>10&times; faster than PostgreSQL</h2><hr class="rule"><p class="caption">TODO &mdash; Join Order Benchmark, our models as cardinality estimators.</p></section>
+      <section><div class="eyebrow">2 &middot; Preliminary Foundations</div><h2>Join size estimation</h2><hr class="rule">
+        <p class="caption">Two streams, one counter each &mdash; sketched with the <em>same</em> signs &xi;.</p>
+        <!-- Both streams advance in parallel: step k flies the k-th item of each into
+             its own counter, where it fades (absorbed). Stream 2 is shorter and simply
+             stops at step 4; its final value is a PLAIN fragment so steps 5-6 do not
+             blank it. The hidden block at the bottom mirrors the previous slide's
+             [est-row][slide-foot] so Stream 1 keeps its exact position. -->
+        <div class="jsk">
+          <div class="relation" data-tbl="1">
+            <div class="relation-bg"></div>
+            <div class="relation-title">Stream 1</div>
+            <div class="relation-rows">
+              <span class="stream-slot"><span class="dot" style="background:var(--red)"></span><span class="dot fly absorb fragment custom" data-fragment-index="1" data-target="z1" style="background:var(--red)"><span class="sgn">+</span></span></span>
+              <span class="stream-slot"><span class="dot" style="background:var(--green)"></span><span class="dot fly absorb fragment custom" data-fragment-index="2" data-target="z1" style="background:var(--green)"><span class="sgn">&minus;</span></span></span>
+              <span class="stream-slot"><span class="dot" style="background:var(--red)"></span><span class="dot fly absorb fragment custom" data-fragment-index="3" data-target="z1" style="background:var(--red)"><span class="sgn">+</span></span></span>
+              <span class="stream-slot"><span class="dot" style="background:var(--blue)"></span><span class="dot fly absorb fragment custom" data-fragment-index="4" data-target="z1" style="background:var(--blue)"><span class="sgn">+</span></span></span>
+              <span class="stream-slot"><span class="dot" style="background:var(--green)"></span><span class="dot fly absorb fragment custom" data-fragment-index="5" data-target="z1" style="background:var(--green)"><span class="sgn">&minus;</span></span></span>
+              <span class="stream-slot"><span class="dot" style="background:var(--red)"></span><span class="dot fly absorb fragment custom" data-fragment-index="6" data-target="z1" style="background:var(--red)"><span class="sgn">+</span></span></span>
+            </div>
+          </div>
+          <div class="jsk-mid">
+            <div class="counter-wrap">
+              <div class="counter-box" data-counter="z1">
+                <span class="cval fragment fade-out" data-fragment-index="1">0</span>
+                <span class="cval fragment current-visible" data-fragment-index="1">1</span>
+                <span class="cval fragment current-visible" data-fragment-index="2">0</span>
+                <span class="cval fragment current-visible" data-fragment-index="3">1</span>
+                <span class="cval fragment current-visible" data-fragment-index="4">2</span>
+                <span class="cval fragment current-visible" data-fragment-index="5">1</span>
+                <span class="cval fragment" data-fragment-index="6">2</span>
+              </div>
+              <div class="matrix-label">Z<sub>1</sub></div>
+            </div>
+            <div class="jsk-prod fragment" data-fragment-index="7">
+              <div class="prod-val">4</div>
+              <div class="matrix-label">Z<sub>1</sub> &sdot; Z<sub>2</sub></div>
+            </div>
+            <div class="counter-wrap">
+              <div class="counter-box" data-counter="z2">
+                <span class="cval fragment fade-out" data-fragment-index="1">0</span>
+                <span class="cval fragment current-visible" data-fragment-index="1">1</span>
+                <span class="cval fragment current-visible" data-fragment-index="2">2</span>
+                <span class="cval fragment current-visible" data-fragment-index="3">1</span>
+                <span class="cval fragment" data-fragment-index="4">2</span>
+              </div>
+              <div class="matrix-label">Z<sub>2</sub></div>
+            </div>
+          </div>
+          <div class="relation" data-tbl="1">
+            <div class="relation-bg"></div>
+            <div class="relation-title">Stream 2</div>
+            <div class="relation-rows">
+              <span class="stream-slot"><span class="dot" style="background:var(--red)"></span><span class="dot fly absorb fragment custom" data-fragment-index="1" data-target="z2" style="background:var(--red)"><span class="sgn">+</span></span></span>
+              <span class="stream-slot"><span class="dot" style="background:var(--blue)"></span><span class="dot fly absorb fragment custom" data-fragment-index="2" data-target="z2" style="background:var(--blue)"><span class="sgn">+</span></span></span>
+              <span class="stream-slot"><span class="dot" style="background:var(--green)"></span><span class="dot fly absorb fragment custom" data-fragment-index="3" data-target="z2" style="background:var(--green)"><span class="sgn">&minus;</span></span></span>
+              <span class="stream-slot"><span class="dot" style="background:var(--red)"></span><span class="dot fly absorb fragment custom" data-fragment-index="4" data-target="z2" style="background:var(--red)"><span class="sgn">+</span></span></span>
+            </div>
+          </div>
+        </div>
+        <div class="jsk-foot">
+          <div class="est-row est-ghost" aria-hidden="true">
+          <div class="est" style="--ec:var(--red)">
+            <span class="dot" style="background:var(--red)"></span>
+            <div class="est-avg">avg <strong class="est-val">&mdash;</strong></div>
+            <div class="est-true">true 3</div>
+          </div>
+          <div class="est" style="--ec:var(--green)">
+            <span class="dot" style="background:var(--green)"></span>
+            <div class="est-avg">avg <strong class="est-val">&mdash;</strong></div>
+            <div class="est-true">true 2</div>
+          </div>
+          <div class="est" style="--ec:var(--blue)">
+            <span class="dot" style="background:var(--blue)"></span>
+            <div class="est-avg">avg <strong class="est-val">&mdash;</strong></div>
+            <div class="est-true">true 1</div>
+          </div>
+          </div>
+          <div class="slide-foot" aria-hidden="true"></div>
+          <div class="joincalc fragment" data-fragment-index="8">
+            <div class="eyebrow">True join size</div>
+            <div class="joincalc-eq">(3 &times; 2)<span class="dot dot-sm" style="background:var(--red)"></span> + (2 &times; 1)<span class="dot dot-sm" style="background:var(--green)"></span> + (1 &times; 1)<span class="dot dot-sm" style="background:var(--blue)"></span> = <strong>9</strong></div>
+          </div>
+        </div>
+      </section>
 
-    <section><div class="eyebrow">8 &middot; Wrap-up</div><h2>Conclusion</h2><hr class="rule"><p class="caption">TODO &mdash; recap + takeaways.</p></section>
+      <section><div class="eyebrow">2 &middot; Preliminary Foundations</div><h2>Count sketch</h2><hr class="rule">
+        <p class="caption">Width splits collisions into buckets; depth adds independent rows, combined by median.</p>
+        <!-- Driven entirely by the two steppers; no fragments. Opens at w=1,d=1, which
+             reproduces the previous slide exactly (2, 2, estimate 4). Row hashes come
+             from a fixed pool so values never jump when you step back and forth. -->
+        <div class="csk">
+          <div class="relation" data-tbl="1">
+            <div class="relation-bg"></div>
+            <div class="relation-title">Stream 1</div>
+            <div class="relation-rows">
+              <span class="dot" style="background:var(--red)"></span>
+              <span class="dot" style="background:var(--green)"></span>
+              <span class="dot" style="background:var(--red)"></span>
+              <span class="dot" style="background:var(--blue)"></span>
+              <span class="dot" style="background:var(--green)"></span>
+              <span class="dot" style="background:var(--red)"></span>
+            </div>
+          </div>
+          <div class="csk-mid">
+            <div class="csk-wrap">
+              <div class="csk-box" id="csk-g1"></div>
+              <div class="matrix-label">Sketch 1</div>
+            </div>
+            <div class="csk-est">
+              <div class="csk-rows" id="csk-rows"></div>
+              <div class="prod-val" id="csk-val">4</div>
+              <div class="matrix-label" id="csk-lab">estimate</div>
+            </div>
+            <div class="csk-wrap">
+              <div class="csk-box" id="csk-g2"></div>
+              <div class="matrix-label">Sketch 2</div>
+            </div>
+          </div>
+          <div class="relation" data-tbl="1">
+            <div class="relation-bg"></div>
+            <div class="relation-title">Stream 2</div>
+            <div class="relation-rows">
+              <span class="dot" style="background:var(--red)"></span>
+              <span class="dot" style="background:var(--blue)"></span>
+              <span class="dot" style="background:var(--green)"></span>
+              <span class="dot" style="background:var(--red)"></span>
+            </div>
+          </div>
+        </div>
+        <div class="jsk-foot">
+          <div class="est-row est-ghost" aria-hidden="true">
+          <div class="est" style="--ec:var(--red)">
+            <span class="dot" style="background:var(--red)"></span>
+            <div class="est-avg">avg <strong class="est-val">&mdash;</strong></div>
+            <div class="est-true">true 3</div>
+          </div>
+          <div class="est" style="--ec:var(--green)">
+            <span class="dot" style="background:var(--green)"></span>
+            <div class="est-avg">avg <strong class="est-val">&mdash;</strong></div>
+            <div class="est-true">true 2</div>
+          </div>
+          <div class="est" style="--ec:var(--blue)">
+            <span class="dot" style="background:var(--blue)"></span>
+            <div class="est-avg">avg <strong class="est-val">&mdash;</strong></div>
+            <div class="est-true">true 1</div>
+          </div>
+          </div>
+          <div class="slide-foot" aria-hidden="true"></div>
+          <div class="joincalc">
+            <div class="csk-steppers">
+            <div class="stepper">
+              <span class="stepper-label">width</span>
+              <button class="step-btn" type="button" data-csk="w-" aria-label="decrease width">&minus;</button>
+              <span class="step-val" id="csk-w">1</span>
+              <button class="step-btn" type="button" data-csk="w+" aria-label="increase width">+</button>
+            </div>
+            <div class="stepper">
+              <span class="stepper-label">depth</span>
+              <button class="step-btn" type="button" data-csk="d-" aria-label="decrease depth">&minus;</button>
+              <span class="step-val" id="csk-d">1</span>
+              <button class="step-btn" type="button" data-csk="d+" aria-label="increase depth">+</button>
+            </div>
+            </div>
+            <div class="joincalc-eq">(3 &times; 2)<span class="dot dot-sm" style="background:var(--red)"></span> + (2 &times; 1)<span class="dot dot-sm" style="background:var(--green)"></span> + (1 &times; 1)<span class="dot dot-sm" style="background:var(--blue)"></span> = <strong>9</strong></div>
+          </div>
+        </div>
+      </section>
 
+      <section><div class="eyebrow">2 &middot; Preliminary Foundations</div><h2>A live stream</h2><hr class="rule">
+        <p class="caption">The stream keeps growing; each arrival lands in one bucket per row.</p>
+        <!-- Container is .strm (not .csk) so layoutCountSketch() does not claim it.
+             Each tick recomputes both sketches from the running counts rather than
+             patching cells, so the grid always equals a from-scratch rebuild.
+             The visible dots are the START of each stream and never change; the
+             trailing ellipsis is where it keeps growing, so arrivals fly from there.
+             One flier per row per arrival: that is what depth actually does. -->
+        <div class="strm" id="str-fig">
+          <div class="relation" data-tbl="1">
+            <div class="relation-bg"></div>
+            <div class="relation-title">Stream 1</div>
+            <div class="relation-rows" id="str-w1">
+              <span class="dot" style="background:var(--red)"></span>
+              <span class="dot" style="background:var(--green)"></span>
+              <span class="dot" style="background:var(--red)"></span>
+              <span class="dot" style="background:var(--blue)"></span>
+              <span class="dot" style="background:var(--green)"></span>
+              <span class="gdots" id="str-e1">&#8942;</span>
+            </div>
+          </div>
+          <div class="csk-mid">
+            <div class="csk-wrap">
+              <div class="csk-box" id="str-g1"></div>
+              <div class="matrix-label">Sketch 1</div>
+            </div>
+            <div class="csk-est">
+              <div class="csk-rows" id="str-rows"></div>
+              <div class="prod-val" id="str-val">4</div>
+              <div class="matrix-label" id="str-lab">estimate</div>
+            </div>
+            <div class="csk-wrap">
+              <div class="csk-box" id="str-g2"></div>
+              <div class="matrix-label">Sketch 2</div>
+            </div>
+          </div>
+          <div class="relation" data-tbl="1">
+            <div class="relation-bg"></div>
+            <div class="relation-title">Stream 2</div>
+            <div class="relation-rows" id="str-w2">
+              <span class="dot" style="background:var(--red)"></span>
+              <span class="dot" style="background:var(--blue)"></span>
+              <span class="dot" style="background:var(--green)"></span>
+              <span class="gdots" id="str-e2">&#8942;</span>
+            </div>
+          </div>
+        </div>
+        <div class="jsk-foot">
+          <div class="est-row est-ghost" aria-hidden="true">
+          <div class="est" style="--ec:var(--red)">
+            <span class="dot" style="background:var(--red)"></span>
+            <div class="est-avg">avg <strong class="est-val">&mdash;</strong></div>
+            <div class="est-true">true 3</div>
+          </div>
+          <div class="est" style="--ec:var(--green)">
+            <span class="dot" style="background:var(--green)"></span>
+            <div class="est-avg">avg <strong class="est-val">&mdash;</strong></div>
+            <div class="est-true">true 2</div>
+          </div>
+          <div class="est" style="--ec:var(--blue)">
+            <span class="dot" style="background:var(--blue)"></span>
+            <div class="est-avg">avg <strong class="est-val">&mdash;</strong></div>
+            <div class="est-true">true 1</div>
+          </div>
+          </div>
+          <div class="slide-foot" aria-hidden="true"></div>
+          <div class="joincalc">
+            <div class="csk-steppers">
+              <div class="stepper">
+                <span class="stepper-label">width</span>
+                <button class="step-btn" type="button" data-str="w-" aria-label="decrease width">&minus;</button>
+                <span class="step-val" id="str-w">1</span>
+                <button class="step-btn" type="button" data-str="w+" aria-label="increase width">+</button>
+              </div>
+              <div class="stepper">
+                <span class="stepper-label">depth</span>
+                <button class="step-btn" type="button" data-str="d-" aria-label="decrease depth">&minus;</button>
+                <span class="step-val" id="str-d">1</span>
+                <button class="step-btn" type="button" data-str="d+" aria-label="increase depth">+</button>
+              </div>
+              <button class="tw-btn" id="str-play" type="button">Play</button>
+              <button class="tw-btn tw-ghost" id="str-reset" type="button">Reset</button>
+            </div>
+            <div class="joincalc-eq" id="str-true"></div>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <section>
+      <section class="section-divider" data-auto-animate>
+        <div class="num" data-id="secnum">03</div>
+        <div class="kicker">Section</div>
+        <h1 data-id="sectitle" style="color:var(--clay);">Generative Sketching</h1>
+        <p class="caption" style="margin-top:0.6em;">Learning a joint distribution so one sketch can span columns.</p>
+      </section>
+
+      <!-- Three-slide build: the table gains columns, the sketch gains RANK.
+           Matched: the table's key column + bg/title, and the sketch cells --
+           slide 1's 4 cells become row 0 of the matrix, and the matrix becomes
+           the tensor's front layer, so vector -> matrix -> tensor is the motion.
+           autoAnimateUnmatched is left ON so the new cells fade in. -->
+      <section data-auto-animate>
+        <div class="eyebrow" data-id="sec-eyebrow" style="color:var(--clay);">3 &middot; Generative sketching</div>
+        <h2>The Problem with Databases</h2>
+        <hr class="rule" data-id="sec-rule">
+        <p class="caption">Tables usually have more than just one column.</p>
+        <div class="jdist">
+          <div class="relation wide" data-tbl="1">
+            <div class="relation-bg" data-id="jd-bg"></div>
+            <div class="relation-title" data-id="jd-title">Orders</div>
+            <div class="rel-grid" style="grid-template-columns: repeat(1, 46px);">
+              <div class="rel-head" data-id="jd-h">key</div>
+              <span class="dot" data-id="jd-k0" style="background:var(--red)"></span>
+              <span class="dot" data-id="jd-k1" style="background:var(--green)"></span>
+              <span class="dot" data-id="jd-k2" style="background:var(--red)"></span>
+              <span class="dot" data-id="jd-k3" style="background:var(--blue)"></span>
+              <span class="dot" data-id="jd-k4" style="background:var(--green)"></span>
+            </div>
+          </div>
+          <div class="sk">
+            <div class="sk-body">
+            <div class="sk-stack">
+              <div class="sk-layer front">
+                <div class="sk-cell" data-id="sk-0-0"></div>
+                <div class="sk-cell" data-id="sk-0-1"></div>
+                <div class="sk-cell" data-id="sk-0-2"></div>
+                <div class="sk-cell" data-id="sk-0-3"></div>
+              </div>
+            </div>
+            </div>
+            <div class="sk-xlab" data-id="sk-x">key</div>
+            <div class="matrix-label" data-id="sk-type">vector &middot; 4</div>
+          </div>
+        </div>
+      </section>
+
+      <section data-auto-animate>
+        <div class="eyebrow" data-id="sec-eyebrow" style="color:var(--clay);">3 &middot; Generative sketching</div>
+        <h2>The Problem with Databases</h2>
+        <hr class="rule" data-id="sec-rule">
+        <p class="caption">Tables usually have more than just one column.</p>
+        <div class="jdist">
+          <div class="relation wide" data-tbl="1">
+            <div class="relation-bg" data-id="jd-bg"></div>
+            <div class="relation-title" data-id="jd-title">Orders</div>
+            <div class="rel-grid" style="grid-template-columns: repeat(2, 46px);">
+              <div class="rel-head" data-id="jd-h">key</div>
+              <div class="rel-head">date</div>
+              <span class="dot" data-id="jd-k0" style="background:var(--red)"></span>
+              <span class="dot attr-3" data-id="jd-a0-0"></span>
+              <span class="dot" data-id="jd-k1" style="background:var(--green)"></span>
+              <span class="dot attr-2" data-id="jd-a1-0"></span>
+              <span class="dot" data-id="jd-k2" style="background:var(--red)"></span>
+              <span class="dot attr-3" data-id="jd-a2-0"></span>
+              <span class="dot" data-id="jd-k3" style="background:var(--blue)"></span>
+              <span class="dot attr-1" data-id="jd-a3-0"></span>
+              <span class="dot" data-id="jd-k4" style="background:var(--green)"></span>
+              <span class="dot attr-2" data-id="jd-a4-0"></span>
+            </div>
+          </div>
+          <div class="sk">
+            <div class="sk-body">
+            <div class="sk-ylab">date</div>
+            <div class="sk-stack">
+              <div class="sk-layer front">
+                <div class="sk-cell" data-id="sk-0-0"></div>
+                <div class="sk-cell" data-id="sk-0-1"></div>
+                <div class="sk-cell" data-id="sk-0-2"></div>
+                <div class="sk-cell" data-id="sk-0-3"></div>
+                <div class="sk-cell" data-id="sk-1-0"></div>
+                <div class="sk-cell" data-id="sk-1-1"></div>
+                <div class="sk-cell" data-id="sk-1-2"></div>
+                <div class="sk-cell" data-id="sk-1-3"></div>
+                <div class="sk-cell" data-id="sk-2-0"></div>
+                <div class="sk-cell" data-id="sk-2-1"></div>
+                <div class="sk-cell" data-id="sk-2-2"></div>
+                <div class="sk-cell" data-id="sk-2-3"></div>
+                <div class="sk-cell" data-id="sk-3-0"></div>
+                <div class="sk-cell" data-id="sk-3-1"></div>
+                <div class="sk-cell" data-id="sk-3-2"></div>
+                <div class="sk-cell" data-id="sk-3-3"></div>
+              </div>
+            </div>
+            </div>
+            <div class="sk-xlab" data-id="sk-x">key</div>
+            <div class="matrix-label" data-id="sk-type">matrix &middot; 4&times;4</div>
+          </div>
+        </div>
+      </section>
+
+      <section data-auto-animate>
+        <div class="eyebrow" data-id="sec-eyebrow" style="color:var(--clay);">3 &middot; Generative sketching</div>
+        <h2>The Problem with Databases</h2>
+        <hr class="rule" data-id="sec-rule">
+        <p class="caption">Tables usually have more than just one column.</p>
+        <div class="jdist">
+          <div class="relation wide" data-tbl="1">
+            <div class="relation-bg" data-id="jd-bg"></div>
+            <div class="relation-title" data-id="jd-title">Orders</div>
+            <div class="rel-grid" style="grid-template-columns: repeat(3, 46px);">
+              <div class="rel-head" data-id="jd-h">key</div>
+              <div class="rel-head">date</div>
+              <div class="rel-head">price</div>
+              <span class="dot" data-id="jd-k0" style="background:var(--red)"></span>
+              <span class="dot attr-3" data-id="jd-a0-0"></span>
+              <span class="dot attr-1" data-id="jd-a0-1"></span>
+              <span class="dot" data-id="jd-k1" style="background:var(--green)"></span>
+              <span class="dot attr-2" data-id="jd-a1-0"></span>
+              <span class="dot attr-2" data-id="jd-a1-1"></span>
+              <span class="dot" data-id="jd-k2" style="background:var(--red)"></span>
+              <span class="dot attr-3" data-id="jd-a2-0"></span>
+              <span class="dot attr-1" data-id="jd-a2-1"></span>
+              <span class="dot" data-id="jd-k3" style="background:var(--blue)"></span>
+              <span class="dot attr-1" data-id="jd-a3-0"></span>
+              <span class="dot attr-3" data-id="jd-a3-1"></span>
+              <span class="dot" data-id="jd-k4" style="background:var(--green)"></span>
+              <span class="dot attr-2" data-id="jd-a4-0"></span>
+              <span class="dot attr-2" data-id="jd-a4-1"></span>
+            </div>
+          </div>
+          <div class="sk">
+            <div class="sk-body">
+            <div class="sk-ylab">date</div>
+            <div class="sk-stack">
+              <div class="sk-zlab">price</div>
+              <div class="sk-layer" style="--i:3;">
+                <div class="sk-cell"></div>
+                <div class="sk-cell"></div>
+                <div class="sk-cell"></div>
+                <div class="sk-cell"></div>
+                <div class="sk-cell"></div>
+                <div class="sk-cell"></div>
+                <div class="sk-cell"></div>
+                <div class="sk-cell"></div>
+                <div class="sk-cell"></div>
+                <div class="sk-cell"></div>
+                <div class="sk-cell"></div>
+                <div class="sk-cell"></div>
+                <div class="sk-cell"></div>
+                <div class="sk-cell"></div>
+                <div class="sk-cell"></div>
+                <div class="sk-cell"></div>
+              </div>
+              <div class="sk-layer" style="--i:2;">
+                <div class="sk-cell"></div>
+                <div class="sk-cell"></div>
+                <div class="sk-cell"></div>
+                <div class="sk-cell"></div>
+                <div class="sk-cell"></div>
+                <div class="sk-cell"></div>
+                <div class="sk-cell"></div>
+                <div class="sk-cell"></div>
+                <div class="sk-cell"></div>
+                <div class="sk-cell"></div>
+                <div class="sk-cell"></div>
+                <div class="sk-cell"></div>
+                <div class="sk-cell"></div>
+                <div class="sk-cell"></div>
+                <div class="sk-cell"></div>
+                <div class="sk-cell"></div>
+              </div>
+              <div class="sk-layer" style="--i:1;">
+                <div class="sk-cell"></div>
+                <div class="sk-cell"></div>
+                <div class="sk-cell"></div>
+                <div class="sk-cell"></div>
+                <div class="sk-cell"></div>
+                <div class="sk-cell"></div>
+                <div class="sk-cell"></div>
+                <div class="sk-cell"></div>
+                <div class="sk-cell"></div>
+                <div class="sk-cell"></div>
+                <div class="sk-cell"></div>
+                <div class="sk-cell"></div>
+                <div class="sk-cell"></div>
+                <div class="sk-cell"></div>
+                <div class="sk-cell"></div>
+                <div class="sk-cell"></div>
+              </div>
+              <div class="sk-layer front">
+                <div class="sk-cell" data-id="sk-0-0"></div>
+                <div class="sk-cell" data-id="sk-0-1"></div>
+                <div class="sk-cell" data-id="sk-0-2"></div>
+                <div class="sk-cell" data-id="sk-0-3"></div>
+                <div class="sk-cell" data-id="sk-1-0"></div>
+                <div class="sk-cell" data-id="sk-1-1"></div>
+                <div class="sk-cell" data-id="sk-1-2"></div>
+                <div class="sk-cell" data-id="sk-1-3"></div>
+                <div class="sk-cell" data-id="sk-2-0"></div>
+                <div class="sk-cell" data-id="sk-2-1"></div>
+                <div class="sk-cell" data-id="sk-2-2"></div>
+                <div class="sk-cell" data-id="sk-2-3"></div>
+                <div class="sk-cell" data-id="sk-3-0"></div>
+                <div class="sk-cell" data-id="sk-3-1"></div>
+                <div class="sk-cell" data-id="sk-3-2"></div>
+                <div class="sk-cell" data-id="sk-3-3"></div>
+              </div>
+            </div>
+            </div>
+            <div class="sk-xlab" data-id="sk-x">key</div>
+            <div class="matrix-label" data-id="sk-type">tensor &middot; 4&times;4&times;4</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Every grid item is placed EXPLICITLY: a definitely-placed .row-hl blocks
+           auto-placement, which pushed the dots a row below the highlight.
+           Fliers use per-row ids (fly-r{k}-*), so each row's dots fly table ->
+           network once and are then consumed; nothing ever flies backwards.
+           The key dot flies to the loss slot. -->
+      <section data-auto-animate>
+        <div class="eyebrow" data-id="sec-eyebrow" style="color:var(--clay);">3 &middot; Generative sketching</div>
+        <h2>Training the model</h2>
+        <hr class="rule" data-id="sec-rule">
+        <p class="caption">Every row is an example: the other columns in, the join key out.</p>
+        <div class="jdist">
+          <div class="relation wide" data-tbl="1">
+            <div class="relation-bg" data-id="jd-bg"></div>
+            <div class="relation-title" data-id="jd-title">Orders</div>
+            <div class="rel-grid" style="grid-template-columns: repeat(3, 46px);">
+              <div class="row-hl" data-id="row-hl" style="grid-row: 2; grid-column: 1 / -1;"></div>
+              <div class="rel-head" data-id="jd-h" style="grid-row:1; grid-column:1;">key</div>
+              <div class="rel-head" style="grid-row:1; grid-column:2;">date</div>
+              <div class="rel-head" style="grid-row:1; grid-column:3;">price</div>
+              <span class="cell-slot" style="grid-row:2; grid-column:1;"><span class="dot" data-id="jd-k0" style="background:var(--red)"></span><span class="dot fly-dot" data-id="fly-r0-key" style="background:var(--red)"></span></span>
+              <span class="cell-slot" style="grid-row:2; grid-column:2;"><span class="dot attr-3" data-id="jd-a0-0" style=""></span><span class="dot attr-3 fly-dot" data-id="fly-r0-a" style=""></span></span>
+              <span class="cell-slot" style="grid-row:2; grid-column:3;"><span class="dot attr-1" data-id="jd-a0-1" style=""></span><span class="dot attr-1 fly-dot" data-id="fly-r0-b" style=""></span></span>
+              <span class="dot" data-id="jd-k1" style="background:var(--green); grid-row:3; grid-column:1;"></span>
+              <span class="dot attr-2" data-id="jd-a1-0" style="grid-row:3; grid-column:2;"></span>
+              <span class="dot attr-2" data-id="jd-a1-1" style="grid-row:3; grid-column:3;"></span>
+              <span class="dot" data-id="jd-k2" style="background:var(--red); grid-row:4; grid-column:1;"></span>
+              <span class="dot attr-3" data-id="jd-a2-0" style="grid-row:4; grid-column:2;"></span>
+              <span class="dot attr-1" data-id="jd-a2-1" style="grid-row:4; grid-column:3;"></span>
+              <span class="dot" data-id="jd-k3" style="background:var(--blue); grid-row:5; grid-column:1;"></span>
+              <span class="dot attr-1" data-id="jd-a3-0" style="grid-row:5; grid-column:2;"></span>
+              <span class="dot attr-3" data-id="jd-a3-1" style="grid-row:5; grid-column:3;"></span>
+              <span class="dot" data-id="jd-k4" style="background:var(--green); grid-row:6; grid-column:1;"></span>
+              <span class="dot attr-2" data-id="jd-a4-0" style="grid-row:6; grid-column:2;"></span>
+              <span class="dot attr-2" data-id="jd-a4-1" style="grid-row:6; grid-column:3;"></span>
+            </div>
+          </div>
+          <div class="gen">
+              <div class="nnbox">
+                <div class="nnbox-bg" data-id="gen-model"></div>
+                <svg width="124" height="104" viewBox="0 0 124 104" aria-label="neural network">
+                  <g class="nn-edge">
+                    <line x1="30" y1="32" x2="62" y2="14"></line><line x1="30" y1="32" x2="62" y2="40"></line>
+                    <line x1="30" y1="32" x2="62" y2="66"></line><line x1="30" y1="32" x2="62" y2="92"></line>
+                    <line x1="30" y1="72" x2="62" y2="14"></line><line x1="30" y1="72" x2="62" y2="40"></line>
+                    <line x1="30" y1="72" x2="62" y2="66"></line><line x1="30" y1="72" x2="62" y2="92"></line>
+                    <line x1="62" y1="14" x2="107" y2="52"></line><line x1="62" y1="40" x2="107" y2="52"></line>
+                    <line x1="62" y1="66" x2="107" y2="52"></line><line x1="62" y1="92" x2="107" y2="52"></line>
+                  </g>
+                  <circle class="nn-in-node" cx="17" cy="32" r="13"></circle>
+                  <circle class="nn-in-node" cx="17" cy="72" r="13"></circle>
+                  <g class="nn-node">
+                    <circle cx="62" cy="14" r="6"></circle><circle cx="62" cy="40" r="6"></circle>
+                    <circle cx="62" cy="66" r="6"></circle><circle cx="62" cy="92" r="6"></circle>
+                    <circle cx="107" cy="52" r="8"></circle>
+                  </g>
+                </svg>
+              <span class="nn-socket" style="left:18px; top:31px;"></span>
+              <span class="nn-socket" style="left:18px; top:71px;"></span>
+                <div class="matrix-label">model</div>
+              </div>
+            <div class="pipearrow">&rarr;</div>
+              <div class="vector">
+                <div class="matrix-grid" style="grid-template-columns: repeat(4, 24px);">
+                  <div class="matrix-cell" data-id="gen-out-0" style="background:var(--slate-soft);"></div>
+                  <div class="matrix-cell" data-id="gen-out-1" style="background:var(--slate-soft);"></div>
+                  <div class="matrix-cell" data-id="gen-out-2" style="background:var(--slate-soft);"></div>
+                  <div class="matrix-cell" data-id="gen-out-3" style="background:var(--slate-soft);"></div>
+                </div>
+                <div class="matrix-label" data-id="gen-outlab">output</div>
+              </div>
+              <div class="projop" data-id="loss-op" style="opacity:0;">&minus;</div>
+              <div class="vector">
+                <span class="loss-slot"></span>
+                <div class="matrix-label" data-id="loss-lab" style="opacity:0;">target &middot; loss</div>
+              </div>
+          </div>
+        </div>
+      </section>
+
+      <section data-auto-animate>
+        <div class="eyebrow" data-id="sec-eyebrow" style="color:var(--clay);">3 &middot; Generative sketching</div>
+        <h2>Training the model</h2>
+        <hr class="rule" data-id="sec-rule">
+        <p class="caption">Every row is an example: the other columns in, the join key out.</p>
+        <div class="jdist">
+          <div class="relation wide" data-tbl="1">
+            <div class="relation-bg" data-id="jd-bg"></div>
+            <div class="relation-title" data-id="jd-title">Orders</div>
+            <div class="rel-grid" style="grid-template-columns: repeat(3, 46px);">
+              <div class="row-hl" data-id="row-hl" style="grid-row: 2; grid-column: 1 / -1;"></div>
+              <div class="rel-head" data-id="jd-h" style="grid-row:1; grid-column:1;">key</div>
+              <div class="rel-head" style="grid-row:1; grid-column:2;">date</div>
+              <div class="rel-head" style="grid-row:1; grid-column:3;">price</div>
+              <span class="dot" data-id="jd-k0" style="background:var(--red); grid-row:2; grid-column:1;"></span>
+              <span class="dot attr-3" data-id="jd-a0-0" style="grid-row:2; grid-column:2;"></span>
+              <span class="dot attr-1" data-id="jd-a0-1" style="grid-row:2; grid-column:3;"></span>
+              <span class="dot" data-id="jd-k1" style="background:var(--green); grid-row:3; grid-column:1;"></span>
+              <span class="dot attr-2" data-id="jd-a1-0" style="grid-row:3; grid-column:2;"></span>
+              <span class="dot attr-2" data-id="jd-a1-1" style="grid-row:3; grid-column:3;"></span>
+              <span class="dot" data-id="jd-k2" style="background:var(--red); grid-row:4; grid-column:1;"></span>
+              <span class="dot attr-3" data-id="jd-a2-0" style="grid-row:4; grid-column:2;"></span>
+              <span class="dot attr-1" data-id="jd-a2-1" style="grid-row:4; grid-column:3;"></span>
+              <span class="dot" data-id="jd-k3" style="background:var(--blue); grid-row:5; grid-column:1;"></span>
+              <span class="dot attr-1" data-id="jd-a3-0" style="grid-row:5; grid-column:2;"></span>
+              <span class="dot attr-3" data-id="jd-a3-1" style="grid-row:5; grid-column:3;"></span>
+              <span class="dot" data-id="jd-k4" style="background:var(--green); grid-row:6; grid-column:1;"></span>
+              <span class="dot attr-2" data-id="jd-a4-0" style="grid-row:6; grid-column:2;"></span>
+              <span class="dot attr-2" data-id="jd-a4-1" style="grid-row:6; grid-column:3;"></span>
+            </div>
+          </div>
+          <div class="gen">
+              <div class="nnbox">
+                <div class="nnbox-bg" data-id="gen-model"></div>
+                <svg width="124" height="104" viewBox="0 0 124 104" aria-label="neural network">
+                  <g class="nn-edge">
+                    <line x1="30" y1="32" x2="62" y2="14"></line><line x1="30" y1="32" x2="62" y2="40"></line>
+                    <line x1="30" y1="32" x2="62" y2="66"></line><line x1="30" y1="32" x2="62" y2="92"></line>
+                    <line x1="30" y1="72" x2="62" y2="14"></line><line x1="30" y1="72" x2="62" y2="40"></line>
+                    <line x1="30" y1="72" x2="62" y2="66"></line><line x1="30" y1="72" x2="62" y2="92"></line>
+                    <line x1="62" y1="14" x2="107" y2="52"></line><line x1="62" y1="40" x2="107" y2="52"></line>
+                    <line x1="62" y1="66" x2="107" y2="52"></line><line x1="62" y1="92" x2="107" y2="52"></line>
+                  </g>
+                  <circle class="nn-in-node" cx="17" cy="32" r="13"></circle>
+                  <circle class="nn-in-node" cx="17" cy="72" r="13"></circle>
+                  <g class="nn-node">
+                    <circle cx="62" cy="14" r="6"></circle><circle cx="62" cy="40" r="6"></circle>
+                    <circle cx="62" cy="66" r="6"></circle><circle cx="62" cy="92" r="6"></circle>
+                    <circle cx="107" cy="52" r="8"></circle>
+                  </g>
+                </svg>
+              <span class="nn-socket" style="left:18px; top:31px;"><span class="dot attr-3 fly-dot" data-id="fly-r0-a" style=""></span></span>
+              <span class="nn-socket" style="left:18px; top:71px;"><span class="dot attr-1 fly-dot" data-id="fly-r0-b" style=""></span></span>
+                <div class="matrix-label">model</div>
+              </div>
+            <div class="pipearrow">&rarr;</div>
+              <div class="vector">
+                <div class="matrix-grid" style="grid-template-columns: repeat(4, 24px);">
+                  <div class="matrix-cell" data-id="gen-out-0" style="background:rgba(176,101,79,0.30);"></div>
+                  <div class="matrix-cell" data-id="gen-out-1" style="background:rgba(176,101,79,0.30);"></div>
+                  <div class="matrix-cell" data-id="gen-out-2" style="background:rgba(176,101,79,0.30);"></div>
+                  <div class="matrix-cell" data-id="gen-out-3" style="background:rgba(176,101,79,0.30);"></div>
+                </div>
+                <div class="matrix-label" data-id="gen-outlab">output</div>
+              </div>
+              <div class="projop" data-id="loss-op" style="">&minus;</div>
+              <div class="vector">
+                <span class="loss-slot"><span class="dot fly-dot" data-id="fly-r0-key" style="background:var(--red)"></span></span>
+                <div class="matrix-label" data-id="loss-lab" style="">target &middot; loss</div>
+              </div>
+          </div>
+        </div>
+      </section>
+
+      <section data-auto-animate>
+        <div class="eyebrow" data-id="sec-eyebrow" style="color:var(--clay);">3 &middot; Generative sketching</div>
+        <h2>Training the model</h2>
+        <hr class="rule" data-id="sec-rule">
+        <p class="caption">Every row is an example: the other columns in, the join key out.</p>
+        <div class="jdist">
+          <div class="relation wide" data-tbl="1">
+            <div class="relation-bg" data-id="jd-bg"></div>
+            <div class="relation-title" data-id="jd-title">Orders</div>
+            <div class="rel-grid" style="grid-template-columns: repeat(3, 46px);">
+              <div class="row-hl" data-id="row-hl" style="grid-row: 3; grid-column: 1 / -1;"></div>
+              <div class="rel-head" data-id="jd-h" style="grid-row:1; grid-column:1;">key</div>
+              <div class="rel-head" style="grid-row:1; grid-column:2;">date</div>
+              <div class="rel-head" style="grid-row:1; grid-column:3;">price</div>
+              <span class="dot" data-id="jd-k0" style="background:var(--red); grid-row:2; grid-column:1;"></span>
+              <span class="dot attr-3" data-id="jd-a0-0" style="grid-row:2; grid-column:2;"></span>
+              <span class="dot attr-1" data-id="jd-a0-1" style="grid-row:2; grid-column:3;"></span>
+              <span class="cell-slot" style="grid-row:3; grid-column:1;"><span class="dot" data-id="jd-k1" style="background:var(--green)"></span><span class="dot fly-dot" data-id="fly-r1-key" style="background:var(--green)"></span></span>
+              <span class="cell-slot" style="grid-row:3; grid-column:2;"><span class="dot attr-2" data-id="jd-a1-0" style=""></span><span class="dot attr-2 fly-dot" data-id="fly-r1-a" style=""></span></span>
+              <span class="cell-slot" style="grid-row:3; grid-column:3;"><span class="dot attr-2" data-id="jd-a1-1" style=""></span><span class="dot attr-2 fly-dot" data-id="fly-r1-b" style=""></span></span>
+              <span class="dot" data-id="jd-k2" style="background:var(--red); grid-row:4; grid-column:1;"></span>
+              <span class="dot attr-3" data-id="jd-a2-0" style="grid-row:4; grid-column:2;"></span>
+              <span class="dot attr-1" data-id="jd-a2-1" style="grid-row:4; grid-column:3;"></span>
+              <span class="dot" data-id="jd-k3" style="background:var(--blue); grid-row:5; grid-column:1;"></span>
+              <span class="dot attr-1" data-id="jd-a3-0" style="grid-row:5; grid-column:2;"></span>
+              <span class="dot attr-3" data-id="jd-a3-1" style="grid-row:5; grid-column:3;"></span>
+              <span class="dot" data-id="jd-k4" style="background:var(--green); grid-row:6; grid-column:1;"></span>
+              <span class="dot attr-2" data-id="jd-a4-0" style="grid-row:6; grid-column:2;"></span>
+              <span class="dot attr-2" data-id="jd-a4-1" style="grid-row:6; grid-column:3;"></span>
+            </div>
+          </div>
+          <div class="gen">
+              <div class="nnbox">
+                <div class="nnbox-bg" data-id="gen-model"></div>
+                <svg width="124" height="104" viewBox="0 0 124 104" aria-label="neural network">
+                  <g class="nn-edge">
+                    <line x1="30" y1="32" x2="62" y2="14"></line><line x1="30" y1="32" x2="62" y2="40"></line>
+                    <line x1="30" y1="32" x2="62" y2="66"></line><line x1="30" y1="32" x2="62" y2="92"></line>
+                    <line x1="30" y1="72" x2="62" y2="14"></line><line x1="30" y1="72" x2="62" y2="40"></line>
+                    <line x1="30" y1="72" x2="62" y2="66"></line><line x1="30" y1="72" x2="62" y2="92"></line>
+                    <line x1="62" y1="14" x2="107" y2="52"></line><line x1="62" y1="40" x2="107" y2="52"></line>
+                    <line x1="62" y1="66" x2="107" y2="52"></line><line x1="62" y1="92" x2="107" y2="52"></line>
+                  </g>
+                  <circle class="nn-in-node" cx="17" cy="32" r="13"></circle>
+                  <circle class="nn-in-node" cx="17" cy="72" r="13"></circle>
+                  <g class="nn-node">
+                    <circle cx="62" cy="14" r="6"></circle><circle cx="62" cy="40" r="6"></circle>
+                    <circle cx="62" cy="66" r="6"></circle><circle cx="62" cy="92" r="6"></circle>
+                    <circle cx="107" cy="52" r="8"></circle>
+                  </g>
+                </svg>
+              <span class="nn-socket" style="left:18px; top:31px;"></span>
+              <span class="nn-socket" style="left:18px; top:71px;"></span>
+                <div class="matrix-label">model</div>
+              </div>
+            <div class="pipearrow">&rarr;</div>
+              <div class="vector">
+                <div class="matrix-grid" style="grid-template-columns: repeat(4, 24px);">
+                  <div class="matrix-cell" data-id="gen-out-0" style="background:var(--slate-soft);"></div>
+                  <div class="matrix-cell" data-id="gen-out-1" style="background:var(--slate-soft);"></div>
+                  <div class="matrix-cell" data-id="gen-out-2" style="background:var(--slate-soft);"></div>
+                  <div class="matrix-cell" data-id="gen-out-3" style="background:var(--slate-soft);"></div>
+                </div>
+                <div class="matrix-label" data-id="gen-outlab">output</div>
+              </div>
+              <div class="projop" data-id="loss-op" style="opacity:0;">&minus;</div>
+              <div class="vector">
+                <span class="loss-slot"></span>
+                <div class="matrix-label" data-id="loss-lab" style="opacity:0;">target &middot; loss</div>
+              </div>
+          </div>
+        </div>
+      </section>
+
+      <section data-auto-animate>
+        <div class="eyebrow" data-id="sec-eyebrow" style="color:var(--clay);">3 &middot; Generative sketching</div>
+        <h2>Training the model</h2>
+        <hr class="rule" data-id="sec-rule">
+        <p class="caption">Every row is an example: the other columns in, the join key out.</p>
+        <div class="jdist">
+          <div class="relation wide" data-tbl="1">
+            <div class="relation-bg" data-id="jd-bg"></div>
+            <div class="relation-title" data-id="jd-title">Orders</div>
+            <div class="rel-grid" style="grid-template-columns: repeat(3, 46px);">
+              <div class="row-hl" data-id="row-hl" style="grid-row: 3; grid-column: 1 / -1;"></div>
+              <div class="rel-head" data-id="jd-h" style="grid-row:1; grid-column:1;">key</div>
+              <div class="rel-head" style="grid-row:1; grid-column:2;">date</div>
+              <div class="rel-head" style="grid-row:1; grid-column:3;">price</div>
+              <span class="dot" data-id="jd-k0" style="background:var(--red); grid-row:2; grid-column:1;"></span>
+              <span class="dot attr-3" data-id="jd-a0-0" style="grid-row:2; grid-column:2;"></span>
+              <span class="dot attr-1" data-id="jd-a0-1" style="grid-row:2; grid-column:3;"></span>
+              <span class="dot" data-id="jd-k1" style="background:var(--green); grid-row:3; grid-column:1;"></span>
+              <span class="dot attr-2" data-id="jd-a1-0" style="grid-row:3; grid-column:2;"></span>
+              <span class="dot attr-2" data-id="jd-a1-1" style="grid-row:3; grid-column:3;"></span>
+              <span class="dot" data-id="jd-k2" style="background:var(--red); grid-row:4; grid-column:1;"></span>
+              <span class="dot attr-3" data-id="jd-a2-0" style="grid-row:4; grid-column:2;"></span>
+              <span class="dot attr-1" data-id="jd-a2-1" style="grid-row:4; grid-column:3;"></span>
+              <span class="dot" data-id="jd-k3" style="background:var(--blue); grid-row:5; grid-column:1;"></span>
+              <span class="dot attr-1" data-id="jd-a3-0" style="grid-row:5; grid-column:2;"></span>
+              <span class="dot attr-3" data-id="jd-a3-1" style="grid-row:5; grid-column:3;"></span>
+              <span class="dot" data-id="jd-k4" style="background:var(--green); grid-row:6; grid-column:1;"></span>
+              <span class="dot attr-2" data-id="jd-a4-0" style="grid-row:6; grid-column:2;"></span>
+              <span class="dot attr-2" data-id="jd-a4-1" style="grid-row:6; grid-column:3;"></span>
+            </div>
+          </div>
+          <div class="gen">
+              <div class="nnbox">
+                <div class="nnbox-bg" data-id="gen-model"></div>
+                <svg width="124" height="104" viewBox="0 0 124 104" aria-label="neural network">
+                  <g class="nn-edge">
+                    <line x1="30" y1="32" x2="62" y2="14"></line><line x1="30" y1="32" x2="62" y2="40"></line>
+                    <line x1="30" y1="32" x2="62" y2="66"></line><line x1="30" y1="32" x2="62" y2="92"></line>
+                    <line x1="30" y1="72" x2="62" y2="14"></line><line x1="30" y1="72" x2="62" y2="40"></line>
+                    <line x1="30" y1="72" x2="62" y2="66"></line><line x1="30" y1="72" x2="62" y2="92"></line>
+                    <line x1="62" y1="14" x2="107" y2="52"></line><line x1="62" y1="40" x2="107" y2="52"></line>
+                    <line x1="62" y1="66" x2="107" y2="52"></line><line x1="62" y1="92" x2="107" y2="52"></line>
+                  </g>
+                  <circle class="nn-in-node" cx="17" cy="32" r="13"></circle>
+                  <circle class="nn-in-node" cx="17" cy="72" r="13"></circle>
+                  <g class="nn-node">
+                    <circle cx="62" cy="14" r="6"></circle><circle cx="62" cy="40" r="6"></circle>
+                    <circle cx="62" cy="66" r="6"></circle><circle cx="62" cy="92" r="6"></circle>
+                    <circle cx="107" cy="52" r="8"></circle>
+                  </g>
+                </svg>
+              <span class="nn-socket" style="left:18px; top:31px;"><span class="dot attr-2 fly-dot" data-id="fly-r1-a" style=""></span></span>
+              <span class="nn-socket" style="left:18px; top:71px;"><span class="dot attr-2 fly-dot" data-id="fly-r1-b" style=""></span></span>
+                <div class="matrix-label">model</div>
+              </div>
+            <div class="pipearrow">&rarr;</div>
+              <div class="vector">
+                <div class="matrix-grid" style="grid-template-columns: repeat(4, 24px);">
+                  <div class="matrix-cell" data-id="gen-out-0" style="background:rgba(176,101,79,0.30);"></div>
+                  <div class="matrix-cell" data-id="gen-out-1" style="background:rgba(176,101,79,0.30);"></div>
+                  <div class="matrix-cell" data-id="gen-out-2" style="background:rgba(176,101,79,0.30);"></div>
+                  <div class="matrix-cell" data-id="gen-out-3" style="background:rgba(176,101,79,0.30);"></div>
+                </div>
+                <div class="matrix-label" data-id="gen-outlab">output</div>
+              </div>
+              <div class="projop" data-id="loss-op" style="">&minus;</div>
+              <div class="vector">
+                <span class="loss-slot"><span class="dot fly-dot" data-id="fly-r1-key" style="background:var(--green)"></span></span>
+                <div class="matrix-label" data-id="loss-lab" style="">target &middot; loss</div>
+              </div>
+          </div>
+        </div>
+      </section>
+
+      <section data-auto-animate>
+        <div class="eyebrow" data-id="sec-eyebrow" style="color:var(--clay);">3 &middot; Generative sketching</div>
+        <h2>Generating the sketch</h2>
+        <hr class="rule" data-id="sec-rule">
+        <p class="caption">One dot product against the key dictionary gives the whole sketch.</p>
+        <div class="jdist">
+          <div class="gen">
+              <div class="nnbox">
+                <div class="nnbox-bg" data-id="gen-model"></div>
+                <svg width="124" height="104" viewBox="0 0 124 104" aria-label="neural network">
+                  <g class="nn-edge">
+                    <line x1="30" y1="32" x2="62" y2="14"></line><line x1="30" y1="32" x2="62" y2="40"></line>
+                    <line x1="30" y1="32" x2="62" y2="66"></line><line x1="30" y1="32" x2="62" y2="92"></line>
+                    <line x1="30" y1="72" x2="62" y2="14"></line><line x1="30" y1="72" x2="62" y2="40"></line>
+                    <line x1="30" y1="72" x2="62" y2="66"></line><line x1="30" y1="72" x2="62" y2="92"></line>
+                    <line x1="62" y1="14" x2="107" y2="52"></line><line x1="62" y1="40" x2="107" y2="52"></line>
+                    <line x1="62" y1="66" x2="107" y2="52"></line><line x1="62" y1="92" x2="107" y2="52"></line>
+                  </g>
+                  <circle class="nn-in-node" cx="17" cy="32" r="13"></circle>
+                  <circle class="nn-in-node" cx="17" cy="72" r="13"></circle>
+                  <g class="nn-node">
+                    <circle cx="62" cy="14" r="6"></circle><circle cx="62" cy="40" r="6"></circle>
+                    <circle cx="62" cy="66" r="6"></circle><circle cx="62" cy="92" r="6"></circle>
+                    <circle cx="107" cy="52" r="8"></circle>
+                  </g>
+                </svg>
+              <span class="nn-socket" style="left:18px; top:31px;"><span class="dot attr-2 fly-dot" data-id="fly-r1-a" style=""></span></span>
+              <span class="nn-socket" style="left:18px; top:71px;"><span class="dot attr-2 fly-dot" data-id="fly-r1-b" style=""></span></span>
+                <div class="matrix-label">model</div>
+              </div>
+            <div class="pipearrow">&rarr;</div>
+              <div class="vector">
+                <div class="matrix-grid" style="grid-template-columns: repeat(4, 24px);">
+                  <div class="matrix-cell" data-id="gen-out-0" style="background:rgba(176,101,79,0.30);"></div>
+                  <div class="matrix-cell" data-id="gen-out-1" style="background:rgba(176,101,79,0.30);"></div>
+                  <div class="matrix-cell" data-id="gen-out-2" style="background:rgba(176,101,79,0.30);"></div>
+                  <div class="matrix-cell" data-id="gen-out-3" style="background:rgba(176,101,79,0.30);"></div>
+                </div>
+                <div class="matrix-label" data-id="gen-outlab">output</div>
+              </div>
+            <div class="projop" data-id="inf-dot">&sdot;</div>
+            <div class="vector" data-id="inf-dict">
+              <div class="matrix-grid" style="grid-template-columns: repeat(6, 24px);">
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+              </div>
+              <div class="matrix-label">key dictionary &middot; d&times;N</div>
+            </div>
+            <div class="projop" data-id="inf-eq" style="opacity:0;">=</div>
+            <div class="vector" data-id="inf-sketch" style="opacity:0;">
+              <div class="matrix-grid" style="grid-template-columns: repeat(6, 24px);">
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+              </div>
+              <div class="matrix-label">sketch</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section data-auto-animate>
+        <div class="eyebrow" data-id="sec-eyebrow" style="color:var(--clay);">3 &middot; Generative sketching</div>
+        <h2>Generating the sketch</h2>
+        <hr class="rule" data-id="sec-rule">
+        <p class="caption">One dot product against the key dictionary gives the whole sketch.</p>
+        <div class="jdist">
+          <div class="gen">
+              <div class="nnbox">
+                <div class="nnbox-bg" data-id="gen-model"></div>
+                <svg width="124" height="104" viewBox="0 0 124 104" aria-label="neural network">
+                  <g class="nn-edge">
+                    <line x1="30" y1="32" x2="62" y2="14"></line><line x1="30" y1="32" x2="62" y2="40"></line>
+                    <line x1="30" y1="32" x2="62" y2="66"></line><line x1="30" y1="32" x2="62" y2="92"></line>
+                    <line x1="30" y1="72" x2="62" y2="14"></line><line x1="30" y1="72" x2="62" y2="40"></line>
+                    <line x1="30" y1="72" x2="62" y2="66"></line><line x1="30" y1="72" x2="62" y2="92"></line>
+                    <line x1="62" y1="14" x2="107" y2="52"></line><line x1="62" y1="40" x2="107" y2="52"></line>
+                    <line x1="62" y1="66" x2="107" y2="52"></line><line x1="62" y1="92" x2="107" y2="52"></line>
+                  </g>
+                  <circle class="nn-in-node" cx="17" cy="32" r="13"></circle>
+                  <circle class="nn-in-node" cx="17" cy="72" r="13"></circle>
+                  <g class="nn-node">
+                    <circle cx="62" cy="14" r="6"></circle><circle cx="62" cy="40" r="6"></circle>
+                    <circle cx="62" cy="66" r="6"></circle><circle cx="62" cy="92" r="6"></circle>
+                    <circle cx="107" cy="52" r="8"></circle>
+                  </g>
+                </svg>
+              <span class="nn-socket" style="left:18px; top:31px;"><span class="dot attr-2 fly-dot" data-id="fly-r1-a" style=""></span></span>
+              <span class="nn-socket" style="left:18px; top:71px;"><span class="dot attr-2 fly-dot" data-id="fly-r1-b" style=""></span></span>
+                <div class="matrix-label">model</div>
+              </div>
+            <div class="pipearrow">&rarr;</div>
+              <div class="vector">
+                <div class="matrix-grid" style="grid-template-columns: repeat(4, 24px);">
+                  <div class="matrix-cell" data-id="gen-out-0" style="background:rgba(176,101,79,0.30);"></div>
+                  <div class="matrix-cell" data-id="gen-out-1" style="background:rgba(176,101,79,0.30);"></div>
+                  <div class="matrix-cell" data-id="gen-out-2" style="background:rgba(176,101,79,0.30);"></div>
+                  <div class="matrix-cell" data-id="gen-out-3" style="background:rgba(176,101,79,0.30);"></div>
+                </div>
+                <div class="matrix-label" data-id="gen-outlab">output</div>
+              </div>
+            <div class="projop" data-id="inf-dot">&sdot;</div>
+            <div class="vector" data-id="inf-dict">
+              <div class="matrix-grid" style="grid-template-columns: repeat(6, 24px);">
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+              </div>
+              <div class="matrix-label">key dictionary &middot; d&times;N</div>
+            </div>
+            <div class="projop" data-id="inf-eq" style="">=</div>
+            <div class="vector" data-id="inf-sketch" style="">
+              <div class="matrix-grid" style="grid-template-columns: repeat(6, 24px);">
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell"></div>
+              </div>
+              <div class="matrix-label">sketch</div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <section>
+      <section class="section-divider" data-auto-animate>
+        <div class="num" data-id="secnum">04</div>
+        <div class="kicker">Section</div>
+        <h1 data-id="sectitle">8.6&times; faster than PostgreSQL</h1>
+        <p class="caption" style="margin-top:0.6em;">113 Join Order Benchmark queries against PostgreSQL 18.4.</p>
+      </section>
+
+      <section><div class="eyebrow">4 &middot; Results</div>
+        <h2>The Join Order Benchmark</h2>
+        <hr class="rule">
+        <div class="schema-graph">
+          <svg class="schema-edges">
+            <line data-from="keyword" data-to="movie_keyword"></line>
+            <line data-from="movie_keyword" data-to="title"></line>
+            <line data-from="company_name" data-to="movie_companies"></line>
+            <line data-from="company_type" data-to="movie_companies"></line>
+            <line data-from="movie_companies" data-to="title"></line>
+            <line data-from="movie_info" data-to="info_type"></line>
+            <line data-from="movie_info_idx" data-to="info_type"></line>
+            <line data-from="person_info" data-to="info_type"></line>
+            <line data-from="movie_info" data-to="title"></line>
+            <line data-from="movie_info_idx" data-to="title"></line>
+            <line data-from="person_info" data-to="name"></line>
+            <line data-from="aka_name" data-to="name"></line>
+            <line data-from="title" data-to="cast_info"></line>
+            <line data-from="cast_info" data-to="name"></line>
+            <line data-from="title" data-to="kind_type"></line>
+            <line data-from="aka_title" data-to="kind_type"></line>
+            <line data-from="aka_title" data-to="title"></line>
+            <line data-from="complete_cast" data-to="title"></line>
+            <line data-from="comp_cast_type" data-to="complete_cast"></line>
+            <line data-from="movie_link" data-to="title"></line>
+            <line data-from="link_type" data-to="movie_link"></line>
+            <line data-from="cast_info" data-to="char_name"></line>
+            <line data-from="cast_info" data-to="role_type"></line>
+          </svg>
+          <div class="schema-node t-md" data-node="keyword" style="grid-row:1 / span 1; grid-column:2;">
+            <span class="tname">keyword</span>
+            <span class="trows">134K</span>
+            <span class="tcols">3 cols</span>
+          </div>
+          <div class="schema-node t-sm" data-node="info_type" style="grid-row:1 / span 1; grid-column:4;">
+            <span class="tname">info_type</span>
+            <span class="trows">113</span>
+            <span class="tcols">2 cols</span>
+          </div>
+          <div class="schema-node t-md" data-node="company_name" style="grid-row:2 / span 1; grid-column:1;">
+            <span class="tname">company_name</span>
+            <span class="trows">235K</span>
+            <span class="tcols">7 cols</span>
+          </div>
+          <div class="schema-node t-lg" data-node="movie_keyword" style="grid-row:2 / span 1; grid-column:2;">
+            <span class="tname">movie_keyword</span>
+            <span class="trows">4.5M</span>
+            <span class="tcols">3 cols</span>
+          </div>
+          <div class="schema-node t-lg" data-node="movie_info" style="grid-row:2 / span 1; grid-column:3;">
+            <span class="tname">movie_info</span>
+            <span class="trows">14.8M</span>
+            <span class="tcols">5 cols</span>
+          </div>
+          <div class="schema-node t-lg" data-node="movie_info_idx" style="grid-row:2 / span 1; grid-column:4;">
+            <span class="tname">movie_info_idx</span>
+            <span class="trows">1.4M</span>
+            <span class="tcols">5 cols</span>
+          </div>
+          <div class="schema-node t-lg" data-node="person_info" style="grid-row:2 / span 1; grid-column:5;">
+            <span class="tname">person_info</span>
+            <span class="trows">3.0M</span>
+            <span class="tcols">5 cols</span>
+          </div>
+          <div class="schema-node t-md" data-node="aka_name" style="grid-row:2 / span 1; grid-column:6;">
+            <span class="tname">aka_name</span>
+            <span class="trows">901K</span>
+            <span class="tcols">8 cols</span>
+          </div>
+          <div class="schema-node t-sm" data-node="company_type" style="grid-row:3 / span 1; grid-column:1;">
+            <span class="tname">company_type</span>
+            <span class="trows">4</span>
+            <span class="tcols">2 cols</span>
+          </div>
+          <div class="schema-node t-lg" data-node="movie_companies" style="grid-row:3 / span 1; grid-column:2;">
+            <span class="tname">movie_companies</span>
+            <span class="trows">2.6M</span>
+            <span class="tcols">5 cols</span>
+          </div>
+          <div class="schema-node t-lg hub" data-node="title" data-rows="2" style="grid-row:3 / span 2; grid-column:3;">
+            <span class="tname">title</span>
+            <span class="trows">2.5M</span>
+            <span class="tcols">12 cols</span>
+          </div>
+          <div class="schema-node t-lg hub" data-node="cast_info" style="grid-row:3 / span 1; grid-column:4;">
+            <span class="tname">cast_info</span>
+            <span class="trows">36.2M</span>
+            <span class="tcols">7 cols</span>
+          </div>
+          <div class="schema-node t-lg hub" data-node="name" style="grid-row:3 / span 1; grid-column:5;">
+            <span class="tname">name</span>
+            <span class="trows">4.2M</span>
+            <span class="tcols">9 cols</span>
+          </div>
+          <div class="schema-node t-sm" data-node="link_type" style="grid-row:4 / span 1; grid-column:1;">
+            <span class="tname">link_type</span>
+            <span class="trows">18</span>
+            <span class="tcols">2 cols</span>
+          </div>
+          <div class="schema-node t-md" data-node="movie_link" style="grid-row:4 / span 1; grid-column:2;">
+            <span class="tname">movie_link</span>
+            <span class="trows">30K</span>
+            <span class="tcols">4 cols</span>
+          </div>
+          <div class="schema-node t-sm" data-node="role_type" style="grid-row:4 / span 1; grid-column:4;">
+            <span class="tname">role_type</span>
+            <span class="trows">12</span>
+            <span class="tcols">2 cols</span>
+          </div>
+          <div class="schema-node t-lg" data-node="char_name" style="grid-row:4 / span 1; grid-column:5;">
+            <span class="tname">char_name</span>
+            <span class="trows">3.1M</span>
+            <span class="tcols">7 cols</span>
+          </div>
+          <div class="schema-node t-sm" data-node="comp_cast_type" style="grid-row:5 / span 1; grid-column:1;">
+            <span class="tname">comp_cast_type</span>
+            <span class="trows">4</span>
+            <span class="tcols">2 cols</span>
+          </div>
+          <div class="schema-node t-md" data-node="complete_cast" style="grid-row:5 / span 1; grid-column:2;">
+            <span class="tname">complete_cast</span>
+            <span class="trows">135K</span>
+            <span class="tcols">4 cols</span>
+          </div>
+          <div class="schema-node t-sm" data-node="kind_type" style="grid-row:5 / span 1; grid-column:3;">
+            <span class="tname">kind_type</span>
+            <span class="trows">7</span>
+            <span class="tcols">2 cols</span>
+          </div>
+          <div class="schema-node t-md" data-node="aka_title" style="grid-row:5 / span 1; grid-column:4;">
+            <span class="tname">aka_title</span>
+            <span class="trows">361K</span>
+            <span class="tcols">12 cols</span>
+          </div>
+        </div>
+        <p class="caption" style="text-align:center; margin-top:1em;">21 tables &middot; 108 columns &middot; 74,190,187 rows &middot; 23 join edges</p>
+      </section>
+
+      <section><div class="eyebrow">4 &middot; Results</div>
+        <h2>Total query execution time</h2>
+        <hr class="rule">
+        <div class="runbars">
+          <div></div><div></div>
+          <div class="runbar-head">total</div>
+          <div class="runbar-head">avg / query</div>
+
+          <div class="runbar-name">PostgreSQL<span class="sub">version 18.4</span></div>
+          <div class="runbar-track"><div class="runbar-fill fragment custom runbar-grow" data-hours="1.98"></div></div>
+          <div class="runbar-val">118.8 min</div>
+          <div class="runbar-avg">63 s</div>
+
+          <div class="runbar-name is-ours">Fast-AGMS<span class="sub">our method</span></div>
+          <div class="runbar-track"><div class="runbar-fill is-ours fragment custom runbar-grow" data-hours="0.23"></div></div>
+          <div class="runbar-val">13.8 min</div>
+          <div class="runbar-avg">7.3 s</div>
+        </div>
+        <p class="fragment" style="text-align:center; margin:1.1em 0 0;"><span class="runbar-hero">8.6&times;</span><span class="runbar-hero-lab">faster than PostgreSQL</span></p>
+        <p class="caption" style="text-align:center; margin-top:1.2em;">113 Join Order Benchmark queries &middot; IMDb, 74,190,187 rows<br>
+          &ldquo;Sketched Sum-Product Networks for Joins&rdquo; (VLDB 2027)</p>
+      </section>
+    </section>
+    
+    <section>
+      <div class="eyebrow">Wrap-up</div>
+      <h2>Conclusion</h2>
+      <hr class="rule">
+      <!-- Same .agenda component as the opening overview slide, so the close
+           visually rhymes with the open: mono 01/02/03, hairline rules, and
+           .mine marking my own contribution in clay. -->
+      <ol class="agenda">
+        <li class="fragment">Sketching answers many questions at once &mdash; join size, inner products, embedding distributions.</li>
+        <li class="fragment mine">Generative models carry sketching to multivariate data &mdash; whole rows, not one column at a time.</li>
+        <li class="fragment" style="color: var(--muted); font-style: italic;">This talk: 10% content, 90% slide animations.</li>
+      </ol>
+    </section>
+
+    <section>
+      <div class="eyebrow">Bonus Slide</div>
+      <h2>Inner Product Estimation</h2>
+      <hr class="rule">
+      <p class="caption">TODO &mdash; demo for inner product estimation between a matrix and a vector.</p>
+    </section>
+    
   </div>
 </div>
 
 <!-- ============================================================================
-     COPY-PASTE PATTERNS  (delete once you're comfortable)
+     COPY-PASTE PATTERNS
      ----------------------------------------------------------------------------
      FRAGMENT (appears on next arrow):
        <p class="fragment">Revealed later.</p>
@@ -305,15 +2199,619 @@
   }
 
   /* Typeset a slide's math at most once, isolated from the navigation
-     event loop so a MathJax hiccup can never break navigation. */
+     event loop so a MathJax hiccup can never break navigation.
+
+     MathJax is loaded `defer`, so it executes only AFTER parsing -- while the
+     reveal.js <script> tags below are not deferred and run DURING parsing.
+     Reveal therefore fires 'ready' before MathJax exists, and the slide you
+     land on (a refresh or a deep link, since hash:true keeps you in place)
+     used to be dropped on the floor and left showing raw TeX until you
+     navigated away and back. So: queue instead of dropping, and flush once
+     MathJax arrives. */
+  var mathPending = [];
+
+  function mathReady() { return !!(window.MathJax && MathJax.typesetPromise); }
+
   function typesetSlide(slide) {
     if (!slide || slide.dataset.mathDone) return;
-    if (!(window.MathJax && MathJax.typesetPromise)) return;
+    if (!mathReady()) {
+      if (mathPending.indexOf(slide) < 0) mathPending.push(slide);
+      return;
+    }
     slide.dataset.mathDone = '1';
     setTimeout(function () {
       try {
         MathJax.typesetPromise([slide]).catch(function (e) { console.warn('MathJax:', e); });
       } catch (e) { console.warn('MathJax:', e); }
+    }, 0);
+  }
+
+  /* Poll rather than chain off MathJax.startup.promise: until the bundle runs,
+     window.MathJax is still the plain config object above, which has a
+     `startup` key but no promise on it. Bounded so a dead CDN cannot leave a
+     timer running forever -- navigation keeps working either way, the math
+     just stays as TeX. */
+  (function flushMath(tries) {
+    if (mathReady()) {
+      var queued = mathPending;
+      mathPending = [];
+      queued.forEach(function (slide) { typesetSlide(slide); });
+      return;
+    }
+    if (tries > 0) setTimeout(function () { flushMath(tries - 1); }, 100);
+  })(100);
+
+  /* Position the join-line fragments' SVG endpoints against the settled
+     auto-animate layout, at most once per slide (see typesetSlide above
+     for the same guard/defer idiom). */
+  /* Sum offsetLeft/offsetTop up the offsetParent chain until reaching
+     container, so coordinates stay correct even through intermediate
+     positioned wrappers (e.g. the duplicate-dot overlay slots). */
+  function offsetWithin(el, container) {
+    var x = 0, y = 0, node = el;
+    while (node && node !== container) {
+      x += node.offsetLeft;
+      y += node.offsetTop;
+      node = node.offsetParent;
+    }
+    return { x: x, y: y };
+  }
+
+  /* Precompute each stream dot's offset to its landing slot, as --fx/--fy.
+     Same guard/defer idiom as layoutJoinLines, and the same offsetWithin walk --
+     offsetLeft/offsetTop ignore transforms, so the numbers hold even once a dot
+     has already flown (e.g. when returning to the slide mid-sequence). */
+  function layoutTugOfWar(slide) {
+    if (!slide || slide.dataset.towDone) return;
+    var arena = slide.querySelector('.tow');
+    if (!arena) return;
+    slide.dataset.towDone = '1';
+    setTimeout(function () {
+      arena.querySelectorAll('.fly[data-slot]').forEach(function (dot) {
+        var slot = arena.querySelector('.pile-slot[data-slot="' + dot.dataset.slot + '"]');
+        if (!slot) return;
+        var a = offsetWithin(dot, arena), b = offsetWithin(slot, arena);
+        dot.style.setProperty('--fx', (b.x - a.x + (slot.offsetWidth - dot.offsetWidth) / 2) + 'px');
+        dot.style.setProperty('--fy', (b.y - a.y + (slot.offsetHeight - dot.offsetHeight) / 2) + 'px');
+      });
+    }, 0);
+  }
+
+  /* Two-stream join sketch: each mover flies into the counter named by its
+     data-target and is absorbed. Same guard/defer idiom and the same
+     offsetWithin walk as layoutTugOfWar. */
+  function layoutJoinSketch(slide) {
+    if (!slide || slide.dataset.jskDone) return;
+    var arena = slide.querySelector('.jsk');
+    if (!arena) return;
+    slide.dataset.jskDone = '1';
+    setTimeout(function () {
+      arena.querySelectorAll('.fly[data-target]').forEach(function (dot) {
+        var box = arena.querySelector('[data-counter="' + dot.dataset.target + '"]');
+        if (!box) return;
+        var a = offsetWithin(dot, arena), b = offsetWithin(box, arena);
+        dot.style.setProperty('--fx', (b.x - a.x + (box.offsetWidth - dot.offsetWidth) / 2) + 'px');
+        dot.style.setProperty('--fy', (b.y - a.y + (box.offsetHeight - dot.offsetHeight) / 2) + 'px');
+      });
+    }, 0);
+  }
+
+  function layoutJoinLines(slide) {
+    if (!slide || slide.dataset.linesDone) return;
+    var container = slide.querySelector('.relation-diagram');
+    var svg = container && container.querySelector('.join-lines-overlay');
+    if (!svg) return;
+    slide.dataset.linesDone = '1';
+    setTimeout(function () {
+      svg.setAttribute('viewBox', '0 0 ' + container.offsetWidth + ' ' + container.offsetHeight);
+      svg.querySelectorAll('g[data-from]').forEach(function (g) {
+        var from = container.querySelector('[data-row="' + g.dataset.from + '"]');
+        var to = container.querySelector('[data-row="' + g.dataset.to + '"]');
+        var line = g.querySelector('line');
+        if (!from || !to || !line) return;
+        var fromPos = offsetWithin(from, container), toPos = offsetWithin(to, container);
+        var cx1 = fromPos.x + from.offsetWidth / 2, cy1 = fromPos.y + from.offsetHeight / 2;
+        var cx2 = toPos.x + to.offsetWidth / 2, cy2 = toPos.y + to.offsetHeight / 2;
+        var rFrom = from.offsetWidth / 2, rTo = to.offsetWidth / 2;
+        var dx = cx2 - cx1, dy = cy2 - cy1, dist = Math.hypot(dx, dy) || 1;
+        var ux = dx / dist, uy = dy / dist;
+        var x1 = cx1 + ux * rFrom, y1 = cy1 + uy * rFrom;
+        var x2 = cx2 - ux * rTo, y2 = cy2 - uy * rTo;
+        var len = Math.max(dist - rFrom - rTo, 0);
+        line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+        line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+        line.setAttribute('stroke-dasharray', len);
+        g.style.setProperty('--len', len);
+      });
+    }, 0);
+  }
+
+  /* JOB schema graph: draw one straight edge per <line data-from data-to>,
+     clipped to each node's RECTANGLE border (layoutJoinLines clips to a circle
+     radius instead -- that is the only real difference). Same guard/defer idiom
+     and the same offsetWithin walk, so the numbers survive Reveal's scaling.
+     Note the selector is line[data-from], not g[data-from]: there is no draw-on
+     wrapper here because the slide reveals all at once.
+
+     A spanning node (title, data-rows="2") is aimed at per SUB-CELL, not at its
+     overall centre: a neighbour beside its top half would otherwise be pulled
+     toward a point half a row lower and would clip whatever sits between. For
+     an ordinary one-cell node the sub-cell centre IS the centre, so the rule
+     costs nothing. */
+  function layoutSchemaGraph(slide) {
+    if (!slide || slide.dataset.schemaDone) return;
+    var graph = slide.querySelector('.schema-graph');
+    var svg = graph && graph.querySelector('.schema-edges');
+    if (!svg) return;
+    slide.dataset.schemaDone = '1';
+    setTimeout(function () {
+      var cs = getComputedStyle(graph);
+      var rowGap = parseFloat(cs.rowGap) || 0, colGap = parseFloat(cs.columnGap) || 0;
+
+      /* Sub-cell grid of one node: its own box carved back into grid cells. */
+      function cells(el) {
+        var o = offsetWithin(el, graph);
+        var nr = parseInt(el.dataset.rows || 1, 10), nc = parseInt(el.dataset.cols || 1, 10);
+        var ch = (el.offsetHeight - (nr - 1) * rowGap) / nr;
+        var cw = (el.offsetWidth - (nc - 1) * colGap) / nc;
+        var out = [];
+        for (var i = 0; i < nc; i++) {
+          for (var j = 0; j < nr; j++) {
+            out.push({ x: o.x + cw / 2 + i * (cw + colGap), y: o.y + ch / 2 + j * (ch + rowGap),
+                       hw: cw / 2, hh: ch / 2 });
+          }
+        }
+        return out;
+      }
+      function nearest(list, px, py) {
+        return list.reduce(function (best, c) {
+          var d = (c.x - px) * (c.x - px) + (c.y - py) * (c.y - py);
+          return (best === null || d < best.d) ? { d: d, c: c } : best;
+        }, null).c;
+      }
+
+      svg.setAttribute('viewBox', '0 0 ' + graph.offsetWidth + ' ' + graph.offsetHeight);
+      svg.querySelectorAll('line[data-from]').forEach(function (line) {
+        var from = graph.querySelector('[data-node="' + line.dataset.from + '"]');
+        var to = graph.querySelector('[data-node="' + line.dataset.to + '"]');
+        if (!from || !to) return;
+        var fc = cells(from), tc = cells(to);
+        /* one refinement pass is enough: at most one endpoint spans */
+        var p = nearest(fc, tc[0].x, tc[0].y);
+        var q = nearest(tc, p.x, p.y);
+        p = nearest(fc, q.x, q.y);
+        var dx = q.x - p.x, dy = q.y - p.y;
+        /* how far from a cell centre to its border along (dx, dy) */
+        function edgeT(c) {
+          return Math.min(dx ? c.hw / Math.abs(dx) : Infinity,
+                          dy ? c.hh / Math.abs(dy) : Infinity);
+        }
+        var t1 = edgeT(p), t2 = edgeT(q);
+        line.setAttribute('x1', p.x + dx * t1); line.setAttribute('y1', p.y + dy * t1);
+        line.setAttribute('x2', q.x - dx * t2); line.setAttribute('y2', q.y - dy * t2);
+      });
+    }, 0);
+  }
+
+  /* Runtime bars: width is derived from data-hours, never hand-measured, so a
+     bar can never drift out of agreement with the number printed beside it.
+     Zero-based linear scale against the largest value, which is what makes the
+     visual ratio the reported ratio. Same guard/defer idiom as the others. */
+  function layoutRuntimeBars(slide) {
+    if (!slide || slide.dataset.barsDone) return;
+    var fills = slide.querySelectorAll('.runbar-fill[data-hours]');
+    if (!fills.length) return;
+    slide.dataset.barsDone = '1';
+    setTimeout(function () {
+      var max = 0;
+      fills.forEach(function (f) { max = Math.max(max, parseFloat(f.dataset.hours)); });
+      if (!(max > 0)) return;
+      fills.forEach(function (f) {
+        f.style.setProperty('--w', (parseFloat(f.dataset.hours) / max * 100) + '%');
+      });
+    }, 0);
+  }
+
+  /* ==== Pairwise-independent sign hash =====================================
+     A degree-(k-1) polynomial over the Mersenne prime field 2^61-1, with the
+     low bit mapped to +/-1. Coefficients are redrawn every round from one
+     splitmix64 stream, so rounds are independent by construction.
+
+     k = 2 (genuinely pairwise) is exactly what this estimator needs: for
+     f_hat(c) = s(c)*Z, unbiasedness needs E[s(c)s(v)] = 0, and the variance
+     reduces to sum over v != c of f_v^2 because the only surviving cross
+     terms are again *pairs*. (4-wise is what F2 / join-size estimation needs.)
+
+     Note: plain % MP, not the folded "fast Mersenne mod" -- a single fold is
+     not enough for the 122-bit products Horner produces and can return a
+     value >= MP. We hash three values per round, so exactness beats speed. */
+  var TW_MP = (1n << 61n) - 1n, TW_M64 = 0xFFFFFFFFFFFFFFFFn;
+  var TW_IDS = { red: 1, green: 2, blue: 3 };
+
+  function twMakeRng(seed) {
+    var s = BigInt(seed) & TW_M64;
+    return function () {
+      s = (s + 0x9e3779b97f4a7c15n) & TW_M64;
+      var z = s;
+      z = ((z ^ (z >> 30n)) * 0xbf58476d1ce4e5b9n) & TW_M64;
+      z = ((z ^ (z >> 27n)) * 0x94d049bb133111ebn) & TW_M64;
+      return (z ^ (z >> 31n)) & TW_M64;
+    };
+  }
+
+  function twSignHash(rng, k) {
+    var c = [], i;
+    for (i = 0; i < k; i++) c.push(rng() % TW_MP);
+    if (c[0] === 0n) c[0] = 1n;             /* leading coefficient non-zero */
+    return function (x) {
+      var h = 0n, bx = BigInt(x), j;
+      for (j = 0; j < c.length; j++) h = (h * bx + c[j]) % TW_MP;
+      return (h & 1n) ? 1 : -1;
+    };
+  }
+
+  /* Bucket hash: the same polynomial, taken mod width. Each width gets its own
+     draw -- the draw ORDER below (sign, then one bin hash per width) is what the
+     seed was validated against; changing it changes every number on the slide. */
+  function twBinHash(rng, k, width) {
+    var c = [], i;
+    for (i = 0; i < k; i++) c.push(rng() % TW_MP);
+    if (c[0] === 0n) c[0] = 1n;
+    return function (x) {
+      var h = 0n, bx = BigInt(x), j;
+      for (j = 0; j < c.length; j++) h = (h * bx + c[j]) % TW_MP;
+      return Number(h % BigInt(width));
+    };
+  }
+
+  /* ==== Count sketch: width = buckets, depth = independent rows =========== */
+  var CSK_MAXW = 6, CSK_MAXD = 5;
+  /* Seed 17 is chosen, not arbitrary: row 0's signs are exactly the previous
+     slide's xi (red +1, green -1, blue +1), so w=1,d=1 reproduces it (2, 2 -> 4). */
+  var CSK_SEED = 17;
+  var CSK_F1 = { red: 3, green: 2, blue: 1 };
+  var CSK_F2 = { red: 2, green: 1, blue: 1 };
+  var CSK = null;
+
+  function cskPool() {
+    var rng = twMakeRng(CSK_SEED), rows = [], r, w;
+    for (r = 0; r < CSK_MAXD; r++) {
+      var row = { sign: twSignHash(rng, 2), bin: {} };
+      for (w = 1; w <= CSK_MAXW; w++) row.bin[w] = twBinHash(rng, 2, w);
+      rows.push(row);
+    }
+    return rows;
+  }
+
+  /* mean of the per-row estimates, rounded to a whole number for display */
+  function cskAverage(a) {
+    var sum = 0, i;
+    for (i = 0; i < a.length; i++) sum += a[i];
+    return Math.round(sum / a.length);
+  }
+
+  function cskGrid(root, vals, w) {
+    root.style.gridTemplateColumns = 'repeat(' + w + ', 34px)';
+    root.innerHTML = '';
+    vals.forEach(function (row) {
+      row.forEach(function (v) {
+        var c = document.createElement('div');
+        c.className = 'csk-cell' + (v > 0 ? ' pos' : v < 0 ? ' neg' : '');
+        c.textContent = v;
+        root.appendChild(c);
+      });
+    });
+  }
+
+  function cskRender() {
+    var w = CSK.w, dep = CSK.d, r, b, col;
+    var g1 = [], g2 = [], ests = [];
+    for (r = 0; r < dep; r++) {
+      var a = [], z = [];
+      for (b = 0; b < w; b++) { a.push(0); z.push(0); }
+      for (col in CSK_F1) {
+        var bucket = CSK.rows[r].bin[w](CSK.ids[col]), s = CSK.rows[r].sign(CSK.ids[col]);
+        a[bucket] += CSK_F1[col] * s;
+        z[bucket] += CSK_F2[col] * s;
+      }
+      var e = 0;
+      for (b = 0; b < w; b++) e += a[b] * z[b];
+      g1.push(a); g2.push(z); ests.push(e);
+    }
+    cskGrid(CSK.g1, g1, w);
+    cskGrid(CSK.g2, g2, w);
+
+    /* hidden at depth 1, so the slide opens looking exactly like the previous one */
+    CSK.rowsEl.style.display = dep > 1 ? 'flex' : 'none';
+    CSK.rowsEl.innerHTML = '';
+    if (dep > 1) {
+      ests.forEach(function (e) {
+        var el = document.createElement('div');
+        el.className = 'csk-rowest';
+        el.textContent = e;
+        CSK.rowsEl.appendChild(el);
+      });
+    }
+    CSK.val.textContent = cskAverage(ests);
+    CSK.lab.textContent = dep > 1 ? 'average' : 'estimate';
+    CSK.wEl.textContent = w;
+    CSK.dEl.textContent = dep;
+    CSK.btns.forEach(function (btn) {
+      var a = btn.dataset.csk;
+      btn.disabled = (a === 'w-' && w <= 1) || (a === 'w+' && w >= CSK_MAXW) ||
+                     (a === 'd-' && dep <= 1) || (a === 'd+' && dep >= CSK_MAXD);
+    });
+  }
+
+  /* ==== Live stream: same sketch, fed continuously ======================= */
+  /* Item arrivals use Math.random() -- that is DATA randomness, deliberately
+     separate from the pairwise-independent hash family the sketch relies on. */
+  var STR_W1 = [['red', 0.50], ['green', 0.33], ['blue', 0.17]];
+  var STR_W2 = [['red', 0.50], ['green', 0.25], ['blue', 0.25]];
+  var STR_INIT1 = { red: 3, green: 2, blue: 1 };
+  var STR_INIT2 = { red: 2, green: 1, blue: 1 };
+  var STR = null;
+
+  function strPick(weights) {
+    var r = Math.random(), acc = 0, i;
+    for (i = 0; i < weights.length; i++) { acc += weights[i][1]; if (r < acc) return weights[i][0]; }
+    return weights[weights.length - 1][0];
+  }
+
+  /* Sketch recomputed from the running counts: O(3*d), cannot drift out of step
+     with the stream, and equals what a from-scratch rebuild would produce. */
+  function strBuild(counts, w, dep) {
+    var g = [], r, b, c;
+    for (r = 0; r < dep; r++) {
+      var row = [];
+      for (b = 0; b < w; b++) row.push(0);
+      for (c in counts) row[STR.rows[r].bin[w](TW_IDS[c])] += counts[c] * STR.rows[r].sign(TW_IDS[c]);
+      g.push(row);
+    }
+    return g;
+  }
+
+  function strFly(src, dst, colour) {
+    if (!src || !dst) return;
+    var a = offsetWithin(src, STR.fig), b = offsetWithin(dst, STR.fig);
+    var el = document.createElement('span');
+    el.className = 'str-fly';
+    el.style.background = 'var(--' + colour + ')';
+    el.style.left = (a.x + (src.offsetWidth - 22) / 2) + 'px';
+    el.style.top = (a.y + (src.offsetHeight - 22) / 2) + 'px';
+    STR.fig.appendChild(el);
+    var dx = b.x - a.x + (dst.offsetWidth - src.offsetWidth) / 2;
+    var dy = b.y - a.y + (dst.offsetHeight - src.offsetHeight) / 2;
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        el.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+        el.style.opacity = '0';
+      });
+    });
+    setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 900);
+  }
+
+  function strRender() {
+    var w = STR.w, dep = STR.d, i;
+    var g1 = strBuild(STR.f1, w, dep), g2 = strBuild(STR.f2, w, dep), ests = [];
+    for (i = 0; i < dep; i++) {
+      var e = 0, b;
+      for (b = 0; b < w; b++) e += g1[i][b] * g2[i][b];
+      ests.push(e);
+    }
+    cskGrid(STR.g1, g1, w);
+    cskGrid(STR.g2, g2, w);
+    STR.rowsEl.style.display = dep > 1 ? 'flex' : 'none';
+    STR.rowsEl.innerHTML = '';
+    if (dep > 1) ests.forEach(function (e) {
+      var el = document.createElement('div');
+      el.className = 'csk-rowest'; el.textContent = e;
+      STR.rowsEl.appendChild(el);
+    });
+    STR.val.textContent = cskAverage(ests);
+    STR.lab.textContent = dep > 1 ? 'average' : 'estimate';
+    STR.wEl.textContent = w; STR.dEl.textContent = dep;
+
+    /* true join size, live: sum over colours of f1*f2, terms marked by dot */
+    var total = 0, html = [];
+    ['red', 'green', 'blue'].forEach(function (c) {
+      total += STR.f1[c] * STR.f2[c];
+      html.push('(' + STR.f1[c] + ' &times; ' + STR.f2[c] + ')<span class="dot dot-sm" style="background:var(--' + c + ')"></span>');
+    });
+    STR.trueEl.innerHTML = html.join(' + ') + ' = <strong>' + total + '</strong>';
+
+    STR.btns.forEach(function (btn) {
+      var a = btn.dataset.str;
+      btn.disabled = (a === 'w-' && w <= 1) || (a === 'w+' && w >= CSK_MAXW) ||
+                     (a === 'd-' && dep <= 1) || (a === 'd+' && dep >= CSK_MAXD);
+    });
+  }
+
+  function strTick() {
+    var c1 = strPick(STR_W1), c2 = strPick(STR_W2);
+    STR.f1[c1] += 1; STR.f2[c2] += 1;
+    strRender();
+    /* one flier per row: the same item lands in a different bucket in each row */
+    var r;
+    for (r = 0; r < STR.d; r++) {
+      strFly(STR.e1, STR.g1.children[r * STR.w + STR.rows[r].bin[STR.w](TW_IDS[c1])], c1);
+      strFly(STR.e2, STR.g2.children[r * STR.w + STR.rows[r].bin[STR.w](TW_IDS[c2])], c2);
+    }
+  }
+
+  function strLoop() {
+    STR.timer = setTimeout(function () {
+      if (!STR || !STR.playing) return;
+      try { strTick(); } catch (e) { console.warn('stream:', e); strStop(); return; }
+      strLoop();
+    }, 700);
+  }
+  function strPlay() { if (!STR || STR.playing) return; STR.playing = true; STR.playBtn.textContent = 'Pause'; strTick(); strLoop(); }
+  function strStop() { if (!STR) return; STR.playing = false; clearTimeout(STR.timer); STR.playBtn.textContent = 'Play'; }
+  function strReset() {           /* keeps the chosen width/depth */
+    if (!STR) return;
+    strStop();
+    STR.f1 = { red: STR_INIT1.red, green: STR_INIT1.green, blue: STR_INIT1.blue };
+    STR.f2 = { red: STR_INIT2.red, green: STR_INIT2.green, blue: STR_INIT2.blue };
+    strRender();
+  }
+
+  function layoutStreamSketch(slide) {
+    if (!slide || slide.dataset.strDone) return;
+    var fig = slide.querySelector('.strm');
+    if (!fig) return;
+    slide.dataset.strDone = '1';
+    setTimeout(function () {
+      try {
+        STR = {
+          fig: fig, w: 1, d: 1, rows: cskPool(), timer: null, playing: false,
+          f1: null, f2: null,
+          g1: slide.querySelector('#str-g1'), g2: slide.querySelector('#str-g2'),
+          e1: slide.querySelector('#str-e1'), e2: slide.querySelector('#str-e2'),
+          rowsEl: slide.querySelector('#str-rows'), val: slide.querySelector('#str-val'),
+          lab: slide.querySelector('#str-lab'), trueEl: slide.querySelector('#str-true'),
+          wEl: slide.querySelector('#str-w'), dEl: slide.querySelector('#str-d'),
+          playBtn: slide.querySelector('#str-play'),
+          btns: [].slice.call(slide.querySelectorAll('[data-str]'))
+        };
+        STR.btns.forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            var a = btn.dataset.str;
+            if (a === 'w+') STR.w = Math.min(CSK_MAXW, STR.w + 1);
+            else if (a === 'w-') STR.w = Math.max(1, STR.w - 1);
+            else if (a === 'd+') STR.d = Math.min(CSK_MAXD, STR.d + 1);
+            else if (a === 'd-') STR.d = Math.max(1, STR.d - 1);
+            strRender();
+          });
+        });
+        STR.playBtn.addEventListener('click', function () { STR.playing ? strStop() : strPlay(); });
+        slide.querySelector('#str-reset').addEventListener('click', strReset);
+        strReset();
+      } catch (e) { console.warn('stream init:', e); }
+    }, 0);
+  }
+
+  function layoutCountSketch(slide) {
+    if (!slide || slide.dataset.cskDone) return;
+    var root = slide.querySelector('.csk');
+    if (!root) return;
+    slide.dataset.cskDone = '1';
+    setTimeout(function () {
+      try {
+        CSK = {
+          w: 1, d: 1, rows: cskPool(), ids: TW_IDS,
+          g1: slide.querySelector('#csk-g1'), g2: slide.querySelector('#csk-g2'),
+          rowsEl: slide.querySelector('#csk-rows'), val: slide.querySelector('#csk-val'),
+          lab: slide.querySelector('#csk-lab'),
+          wEl: slide.querySelector('#csk-w'), dEl: slide.querySelector('#csk-d'),
+          btns: [].slice.call(slide.querySelectorAll('.step-btn'))
+        };
+        CSK.btns.forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            var a = btn.dataset.csk;
+            if (a === 'w+') CSK.w = Math.min(CSK_MAXW, CSK.w + 1);
+            else if (a === 'w-') CSK.w = Math.max(1, CSK.w - 1);
+            else if (a === 'd+') CSK.d = Math.min(CSK_MAXD, CSK.d + 1);
+            else if (a === 'd-') CSK.d = Math.max(1, CSK.d - 1);
+            cskRender();
+          });
+        });
+        cskRender();
+      } catch (e) { console.warn('count sketch:', e); }
+    }, 0);
+  }
+
+  /* ==== The interactive slide ============================================ */
+  var TW = null;
+
+  function twInit(fig) {
+    var dots = [].slice.call(fig.querySelectorAll('.tw-dot'));
+    var slots = {};
+    fig.querySelectorAll('.pile-slot').forEach(function (s) {
+      slots[s.dataset.slot] = offsetWithin(s, fig);
+    });
+    var slide = fig.closest('section');
+    TW = {
+      fig: fig, dots: dots, slots: slots,
+      origins: dots.map(function (dt) { return offsetWithin(dt, fig); }),
+      z: slide.querySelector('#tw-z'), nEl: slide.querySelector('#tw-n'),
+      playBtn: slide.querySelector('#tw-play'), resetBtn: slide.querySelector('#tw-reset'),
+      avg: {}, rng: twMakeRng(Date.now()), timer: null, playing: false,
+      n: 0, sum: { red: 0, green: 0, blue: 0 }
+    };
+    slide.querySelectorAll('[data-tw-avg]').forEach(function (el) { TW.avg[el.dataset.twAvg] = el; });
+    TW.playBtn.addEventListener('click', function () { TW.playing ? twStop() : twPlay(); });
+    TW.resetBtn.addEventListener('click', twReset);
+    twReset();
+  }
+
+  /* The seed reproduces the previous slide exactly: signs +1/-1/+1 send the dots,
+     walked in stream order, to p0,m0,p1,p2,m1,p3 -- the very piles that slide
+     shows -- giving Z=2 and averages 2.00 / -2.00 / 2.00. */
+  var TW_SEED_SIGNS = { red: 1, green: -1, blue: 1 };
+
+  function twApply(sign) {
+    var key;
+    var mi = 0, pi = 0, Z = 0;
+    TW.dots.forEach(function (dt, i) {
+      var s = sign[dt.dataset.color];
+      var slot = TW.slots[(s > 0 ? 'p' + (pi++) : 'm' + (mi++))];
+      var o = TW.origins[i];
+      dt.style.transform = 'translate(' + (slot.x - o.x) + 'px,' + (slot.y - o.y) + 'px)';
+      dt.querySelector('.sgn').textContent = s > 0 ? '+' : '−';
+      Z += s;
+    });
+
+    TW.n += 1;
+    for (key in TW_IDS) TW.sum[key] += sign[key] * Z;   /* f_hat = s(c) * Z */
+    TW.z.textContent = Z;
+    TW.nEl.textContent = TW.n;
+    for (key in TW.avg) TW.avg[key].textContent = (TW.sum[key] / TW.n).toFixed(2);
+  }
+
+  function twRound() {
+    var h = twSignHash(TW.rng, 2), sign = {}, key;
+    for (key in TW_IDS) sign[key] = h(TW_IDS[key]);
+    twApply(sign);
+  }
+
+  /* Place the seeded round with transitions suppressed, so arriving on the slide
+     shows the figure already settled instead of flying it out of the stream. */
+  function twSeed() {
+    TW.n = 0;
+    for (var key in TW.sum) TW.sum[key] = 0;
+    TW.dots.forEach(function (dt) { dt.style.transition = 'none'; });
+    twApply(TW_SEED_SIGNS);
+    void TW.fig.offsetWidth;
+    TW.dots.forEach(function (dt) { dt.style.transition = ''; });
+  }
+
+  function twTick() {
+    TW.timer = setTimeout(function () {
+      if (!TW || !TW.playing) return;
+      try { twRound(); } catch (e) { console.warn('tug-of-war:', e); twStop(); return; }
+      twTick();
+    }, 700);
+  }
+
+  function twPlay() { if (!TW || TW.playing) return; TW.playing = true; TW.playBtn.textContent = 'Pause'; twRound(); twTick(); }
+  function twStop() { if (!TW) return; TW.playing = false; clearTimeout(TW.timer); TW.playBtn.textContent = 'Play'; }
+
+  /* Reset means "back to the slide we came from", not a blank arena. */
+  function twReset() {
+    if (!TW) return;
+    twStop();
+    twSeed();
+  }
+
+  /* Measure once, deferred off the navigation path (same idiom as the others). */
+  function layoutRandomTug(slide) {
+    if (!slide || slide.dataset.twDone) return;
+    var fig = slide.querySelector('#tw-fig');
+    if (!fig) return;
+    slide.dataset.twDone = '1';
+    setTimeout(function () {
+      try { twInit(fig); } catch (e) { console.warn('tug-of-war init:', e); }
     }, 0);
   }
 
@@ -328,10 +2826,22 @@
   });
 
   renderSignVectors(document);
-  Reveal.on('ready', function (e) { typesetSlide(e.currentSlide); });
+  Reveal.on('ready', function (e) { typesetSlide(e.currentSlide); layoutJoinLines(e.currentSlide); layoutTugOfWar(e.currentSlide); layoutRandomTug(e.currentSlide); layoutJoinSketch(e.currentSlide); layoutCountSketch(e.currentSlide); layoutStreamSketch(e.currentSlide); layoutSchemaGraph(e.currentSlide); layoutRuntimeBars(e.currentSlide); });
   Reveal.on('slidechanged', function (e) {
     try { renderSignVectors(e.currentSlide); } catch (err) { console.warn(err); }
     typesetSlide(e.currentSlide);
+    layoutJoinLines(e.currentSlide);
+    layoutTugOfWar(e.currentSlide);
+    /* never leave the timer running behind later slides */
+    if (TW && !e.currentSlide.contains(TW.fig)) twStop();
+    layoutRandomTug(e.currentSlide);
+    layoutJoinSketch(e.currentSlide);
+    layoutCountSketch(e.currentSlide);
+    /* never leave the stream ticking behind a later slide */
+    if (STR && !e.currentSlide.contains(STR.fig)) strStop();
+    layoutStreamSketch(e.currentSlide);
+    layoutSchemaGraph(e.currentSlide);
+    layoutRuntimeBars(e.currentSlide);
   });
 </script>
 </body>
