@@ -1,2 +1,8 @@
 .claude/
 CLAUDE.md
+
+# Pre-re-encode source video (MPEG-4 Part 2, no browser decodes it). Kept on
+# disk as the master copy; the deck ships the H.264 re-encode beside it.
+JEPA/cifar10_jepa_projection.mp4
+# Superseded by I-JEPA.jpg, which is what the deck references.
+JEPA/I-JEPA.png
