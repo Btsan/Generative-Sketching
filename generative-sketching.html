@@ -594,7 +594,11 @@
 .vmv { display: flex; align-items: flex-start; justify-content: center; gap: 46px; margin-top: 0.4em; }
 .vmv-left { display: flex; flex-direction: column; align-items: center; gap: 10px; }
 .vmv-grid { display: grid; gap: 4px; }
-.vmv-hash { font-family: var(--font-mono); font-size: 10px; color: var(--muted); text-align: center; line-height: 1; }
+.vmv-hash { font-family: var(--font-mono); font-size: 12px; color: var(--muted); text-align: center; line-height: 1; }
+/* Scoped to .vmv on purpose: .csk-cell is shared with the count-sketch slide,
+   which is sized correctly already. Keep in step with the grid template in
+   vmvGrid() -- the JS column widths must match these. */
+.vmv .csk-cell { width: 40px; height: 40px; font-size: 15px; }
 /* `x` heads its column; `y` is its mirror -- beside its row, vertically centred
    against the 34px cells rather than floating in the corner above x. */
 .vmv-xlab { display: flex; align-items: flex-end; justify-content: center; }
@@ -607,10 +611,10 @@
 .vmv-neg { color: var(--minus); font-weight: 600; }
 .vmv-right { display: flex; flex-direction: column; gap: 5px; }
 .vmv-line { display: flex; align-items: center; gap: 12px; }
-.vmv-lab { font-family: var(--font-mono); font-size: 13px; color: var(--muted); min-width: 62px; text-align: right; }
+.vmv-lab { font-family: var(--font-mono); font-size: 15px; color: var(--muted); min-width: 62px; text-align: right; }
 /* correlation values can run to several digits, so cells grow past 34px */
 .vmv-row { display: flex; gap: 4px; }
-.vmv-row .csk-cell { width: auto; min-width: 34px; padding: 0 5px; }
+.vmv-row .csk-cell { width: auto; min-width: 40px; padding: 0 6px; }
 .vmv-op { display: flex; align-items: baseline; gap: 10px; padding: 3px 0 3px 92px; font-family: var(--font-label); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
 .vmv-op .sym { font-family: var(--font-mono); font-size: 17px; color: var(--slate); text-transform: none; }
 .vmv-res { display: flex; align-items: baseline; gap: 14px; padding-left: 74px; margin-top: 6px; }
@@ -2505,7 +2509,7 @@
       <div class="eyebrow">Bonus slide</div>
       <h2>Vector&ndash;matrix&ndash;vector product</h2>
       <hr class="rule">
-      <p class="caption">One sketch per factor: \( x \) and \( y \) by their own hashes, \( A \) by the circular convolution of both &mdash; bucket \( (h_1(i)+h_2(j)) \bmod w \), sign \( \xi_1(i)\xi_2(j) \).</p>
+      <p class="caption" style="margin-bottom:2em;">One sketch per factor: \( x \) and \( y \) by their own hashes, \( A \) by the circular convolution of both &mdash; bucket \( (h_1(i)+h_2(j)) \bmod w \), sign \( \xi_1(i)\xi_2(j) \).</p>
       <div class="vmv" id="vmv-fig">
         <div class="vmv-left">
           <div class="vmv-grid" id="vmv-fac"></div>
@@ -3033,7 +3037,7 @@
     var F = VMV.f, g = VMV.fac, i, j;
     g.innerHTML = '';
     /*                            xi1   x     h1    A... */
-    g.style.gridTemplateColumns = '34px 34px 26px repeat(' + VMV_M + ', 34px)';
+    g.style.gridTemplateColumns = '40px 40px 32px repeat(' + VMV_M + ', 40px)';
     function lab(txt, cls) {
       var d = document.createElement('div');
       d.className = cls || 'vmv-hash';
