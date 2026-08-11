@@ -108,6 +108,12 @@
 .eyebrow { font-family: var(--font-label); font-weight: 600; font-size: 0.5em; letter-spacing: 0.16em; text-transform: uppercase; color: var(--slate); margin-bottom: 0.6em; }
 .caption { font-family: var(--font-label); font-size: 0.70em; color: var(--muted); }
 .mono    { font-family: var(--font-mono); }
+/* Indented sub-block: hierarchy comes from the indent, not from shrinking the
+   heading, so the .eyebrow here runs at full body size instead of 0.5em.
+   Letter-spacing is pulled back because 0.16em at 30px reads as a gap, not a word. */
+.applist { margin-left: 1.6em; }
+.applist > .eyebrow { font-size: 1em; letter-spacing: 0.08em; margin-bottom: 0.35em; }
+.applist > ul { margin-top: 0; }
 .rule    { border: none; height: 2px; background: var(--slate); width: 84px; margin: 0.6em 0 1em; opacity: 0.85; }
 
 /* ---- code ---- */
@@ -172,6 +178,71 @@
 .gdots { grid-column: 1 / -1; display: flex; align-items: center; justify-content: center; font-family: var(--font-body); font-size: 0.9em; line-height: 1; color: var(--muted); }
 .matrix-grid { display: grid; grid-template-columns: repeat(2, 24px); grid-auto-rows: 24px; gap: 10px; padding: 10px 12px; border-left: 2px solid var(--slate); border-right: 2px solid var(--slate); }
 .matrix-cell { border-radius: 4px; background: var(--slate-soft); box-shadow: inset 0 0 0 1px rgba(62,92,118,0.28); }
+
+/* ---- "Generating the sketch": inner-product walk --------------------------
+   sketch cell j = output row  DOT  dictionary column j.
+   The dictionary grid is ROW-MAJOR at 6 columns, so column j is DOM children
+   j, j+6, j+12, j+18 -- hence the explicit data-col attribute rather than
+   nth-child arithmetic that would silently rot if the grid is resized.
+   All of these carry Reveal's `custom` class so the fragment toggles the
+   highlight/fill instead of hiding the cell outright (same idiom as :957).
+   Two ring strengths: `.current-fragment` is the column being explained right
+   now, plain `.visible` is one already covered -- so at step 2 the output row
+   and column 1 stay softly lit instead of going dark while still in play. */
+.gen-lit { transition: box-shadow 0.25s ease, background 0.25s ease; }
+.gen-lit.visible          { box-shadow: inset 0 0 0 1px rgba(62,92,118,0.45); }
+.gen-lit.current-fragment { box-shadow: inset 0 0 0 2px var(--slate), 0 0 0 2px rgba(62,92,118,0.18); }
+
+/* Two join keys that collide share ONE dictionary column, so the split fill
+   marks a single bucket serving both -- keeping column j -> cell j intact.
+   Not --clay: these encode join-key identity, not "our method". */
+.key-rg { background: linear-gradient(135deg, var(--red) 0 50%, var(--green) 50% 100%); }
+.key-b  { background: var(--blue); }
+.key-r  { background: var(--red); }
+.key-g  { background: var(--green); }
+
+/* ---- "Independent sketches": swivelling dictionary deck -------------------
+   Three dictionaries as a stacked deck; each step brings the next card to the
+   front. Driven purely by CSS, matching the rest of the deck -- there is no
+   fragmentshown handler anywhere in this file and this does not add one.
+   Zero-size .swiv triggers sit as EARLIER SIBLINGS of .dictstack so the
+   general-sibling combinator can select the carousel state. The triggers share
+   fragment indices with their sketch rows, so this is 3 clicks, not 6.
+   ORDER IS LOAD-BEARING: the .s3 block must follow the .s2 block, since equal
+   specificity means the later rule wins. */
+.swiv { position: absolute; width: 0; height: 0; pointer-events: none; }
+.dictstack { position: relative; width: 248px; height: 200px; perspective: 1000px; }
+/* No overflow:hidden here, or the fanned-out cards get clipped. */
+.dcard { position: absolute; left: 0; bottom: 0; transform-origin: 50% 50%;
+         transition: transform 0.55s cubic-bezier(.22,.61,.36,1), opacity 0.55s ease,
+                     z-index 0s linear 0.27s; }
+
+/* state 1 (default) */
+.dcard[data-k="1"] { transform: none;                                        opacity: 1;    z-index: 3; }
+.dcard[data-k="2"] { transform: translate(15px,-13px) rotateY(-16deg) scale(.97); opacity: .45; z-index: 2; }
+.dcard[data-k="3"] { transform: translate(30px,-26px) rotateY(-16deg) scale(.94); opacity: .25; z-index: 1; }
+
+/* state 2 */
+.s2.visible ~ .dictstack .dcard[data-k="1"] { transform: translate(-15px,13px) rotateY(16deg) scale(.97); opacity: .45; z-index: 2; }
+.s2.visible ~ .dictstack .dcard[data-k="2"] { transform: none;                                        opacity: 1;    z-index: 3; }
+.s2.visible ~ .dictstack .dcard[data-k="3"] { transform: translate(15px,-13px) rotateY(-16deg) scale(.97); opacity: .45; z-index: 2; }
+
+/* state 3 -- must stay after state 2 */
+.s3.visible ~ .dictstack .dcard[data-k="1"] { transform: translate(-30px,26px) rotateY(16deg) scale(.94); opacity: .25; z-index: 1; }
+.s3.visible ~ .dictstack .dcard[data-k="2"] { transform: translate(-15px,13px) rotateY(16deg) scale(.97); opacity: .45; z-index: 2; }
+.s3.visible ~ .dictstack .dcard[data-k="3"] { transform: none;                                        opacity: 1;    z-index: 3; }
+
+.sketchcol { display: flex; flex-direction: column; gap: 14px; }
+.sketchrow { display: flex; align-items: center; gap: 12px; }
+.sketchrow .matrix-label { min-width: 74px; text-align: right; }
+
+/* Sketch cells are outlines until their fragment fires. These must out-specify
+   .key-rg/.key-b above, or the coloured cells would show their fill from the
+   start and give away the answer -- hence .matrix-cell.gen-sk qualifiers. */
+.matrix-cell.gen-sk:not(.visible) { background: transparent; box-shadow: inset 0 0 0 1px rgba(62,92,118,0.22); }
+.matrix-cell.gen-sk.visible        { background: var(--slate-soft); }
+.matrix-cell.gen-sk.visible.key-rg { background: linear-gradient(135deg, var(--red) 0 50%, var(--green) 50% 100%); }
+.matrix-cell.gen-sk.visible.key-b  { background: var(--blue); }
 .matrix-label { font-family: var(--font-mono); font-size: 0.55em; color: var(--muted); }
 /* ---- inner product of the two sketches: <  Sx1 , Sx2  > ---- */
 .relation-diagram.inner-product { align-items: center; gap: 14px; }
@@ -413,8 +484,11 @@
 /* ---- title ---- */
 .title-slide h1 { font-size: 2.3em; line-height: 1.08; margin: 0; }
 .title-slide .sub { font-size: 0.92em; color: var(--muted); font-style: italic; margin-top: 0.4em; }
-.title-slide .who { margin-top: 1.4em; font-size: 0.8em; line-height: 1.5; }
+.title-slide .who { margin-top: 1.4em; font-size: 0.95em; line-height: 1.5; }
 .title-slide .who .name { color: var(--ink); font-weight: 600; font-style: normal; }
+/* .caption is 0.70em and nests inside .who, so the two multiply. Left alone the
+   credentials line lands at 0.95 x 0.70 = 0.67em; this pulls it back up. */
+.title-slide .who .caption { font-size: 0.82em; }
 
 /* ---- MathJax on slides ---- */
 .reveal mjx-container { color: var(--ink); }
@@ -473,8 +547,8 @@
    Zero-based linear scale; widths come from data-hours via layoutRuntimeBars,
    never from hand-measured pixels, so a bar can never disagree with its label. */
 .runbars { display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: 22px 24px; width: 900px; margin: 0.2em auto 0; }
-.runbar-name { font-family: var(--font-label); font-size: 17px; font-weight: 600; color: var(--ink); text-align: right; line-height: 1.25; }
-.runbar-name .sub { display: block; font-weight: 400; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-top: 2px; }
+.runbar-name { font-family: var(--font-label); font-size: 20px; font-weight: 600; color: var(--ink); text-align: right; line-height: 1.25; }
+.runbar-name .sub { display: block; font-weight: 400; font-size: 14px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-top: 2px; }
 .runbar-name.is-ours .sub { color: var(--clay); }
 .runbar-track { position: relative; height: 32px; border-bottom: 1px solid var(--rule); }
 .runbar-fill { height: 32px; width: 0; border-radius: 0 4px 4px 0; background: var(--slate); }
@@ -483,13 +557,13 @@
    specificity trap as .fly */
 .reveal .fragment.runbar-grow { transition: width 0.8s cubic-bezier(.22,.61,.36,1); }
 .reveal .fragment.runbar-grow.visible { width: var(--w, 0%); }
-.runbar-val { font-family: var(--font-mono); font-size: 21px; font-weight: 600; color: var(--ink); text-align: right; min-width: 124px; }
-.runbar-avg { font-family: var(--font-mono); font-size: 15px; color: var(--muted); text-align: right; min-width: 62px; }
-.runbar-head { font-family: var(--font-label); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); text-align: right; }
+.runbar-val { font-family: var(--font-mono); font-size: 25px; font-weight: 600; color: var(--ink); text-align: right; min-width: 124px; }
+.runbar-avg { font-family: var(--font-mono); font-size: 18px; color: var(--muted); text-align: right; min-width: 62px; }
+.runbar-head { font-family: var(--font-label); font-size: 14px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); text-align: right; }
 /* The one hero figure on the slide. Mono rather than the skill's sans, because
    this deck's standing convention is that every number is mono. */
 .runbar-hero { font-family: var(--font-mono); font-size: 52px; font-weight: 700; color: var(--clay); line-height: 1; }
-.runbar-hero-lab { font-family: var(--font-label); font-size: 18px; letter-spacing: 0.04em; color: var(--ink); margin-left: 14px; }
+.runbar-hero-lab { font-family: var(--font-label); font-size: 21px; letter-spacing: 0.04em; color: var(--ink); margin-left: 14px; }
 
 /* ---- vector-matrix-vector demo (bonus slide) -------------------------------
    Reuses .csk-cell / .stepper / .prod-val. Own `vmv-` namespace so it cannot
@@ -538,7 +612,7 @@
 /* margin:0 overrides the `margin: 0 auto` on .figure img -- as flex items, auto
    side margins absorb all free space and blow the pair apart, ignoring the gap. */
 .figure-row img { padding: 0; margin: 0; }
-.figure figcaption { font-family: var(--font-label); font-size: 0.5em; color: var(--muted); margin-top: 0.8em; line-height: 1.7; }
+.figure figcaption { font-family: var(--font-label); font-size: 0.64em; color: var(--muted); margin-top: 0.8em; line-height: 1.7; }
 .figure figcaption a { font-family: var(--font-mono); color: var(--slate); border-bottom: 1px solid var(--rule); }
 .figure figcaption a:hover { color: var(--clay); border-bottom-color: var(--clay); }
 
@@ -574,7 +648,9 @@
       <div class="eyebrow">About me</div>
       <h2>Research interests</h2>
       <hr class="rule">
-      <p class="caption">Generative Models &rarr; Create Sketches &rarr; Faster Databases</p>
+      <!-- 2em against .caption's 0.70em size = ~42px, matching the gap used under the
+           definition paragraph on the "What is sketching?" slide. -->
+      <p class="caption" style="margin-bottom:2em;">Generative Models &rarr; Create Sketches &rarr; Faster Databases</p>
       <p>Studied <span style="color: var(--clay);">generative models to create sketches</span> for better database query optimization:</p>
       <ul>
         <li>Tsan et al., &ldquo;Approximate Sketches,&rdquo; SIGMOD 2024 &mdash; transformers.</li>
@@ -621,12 +697,17 @@
           summarize data in <span style="color: var(--slate);">sublinear space</span> &mdash; usually
           also in sublinear time. Sometimes it refers to random projection, called
           <span style="color: var(--slate);">linear sketching</span>.</p>
-        <div class="eyebrow">Example applications</div>
-        <ul style="font-size:0.8em;">
-          <li><strong>Join sizes</strong> &mdash; used in relational database systems (our focus)</li>
-          <li><strong>Inner products</strong></li>
-          <li><strong>Embedding distributions</strong></li>
-        </ul>
+        <!-- Heading and list are indented as one block. That indent is what makes the
+             heading read as subordinate, so it can sit at full parity with the list
+             instead of being shrunk to a 0.5em slide kicker. -->
+        <div class="applist">
+          <div class="eyebrow">Example applications</div>
+          <ul>
+            <li><strong>Join sizes</strong> &mdash; used in relational database systems (our focus)</li>
+            <li><strong>Inner products</strong></li>
+            <li><strong>Embedding distributions</strong></li>
+          </ul>
+        </div>
       </section>
 
       <section data-auto-animate data-auto-animate-unmatched="false"><div class="eyebrow">1 &middot; Definition</div><h2>Join size</h2><hr class="rule">
@@ -1005,7 +1086,7 @@
             <div class="est-true">true 1</div>
           </div>
         </div>
-        <p class="ip-note slide-foot fragment" data-fragment-index="7">Each item pulls the counter one way. Net: \( Z = \sum_i s(x_i) = 2 \). How many were red?</p>
+        <p class="ip-note slide-foot fragment" data-fragment-index="7">Each item pulls the counter one way. \( Z = \sum_i s(x_i) = 2 \)</p>
       </section>
 
       <section><div class="eyebrow">2 &middot; Preliminary foundations</div><h2>Estimating each count</h2><hr class="rule">
@@ -1171,11 +1252,11 @@
                 <span class="cval fragment current-visible" data-fragment-index="5">1</span>
                 <span class="cval fragment" data-fragment-index="6">2</span>
               </div>
-              <div class="matrix-label">Z<sub>1</sub></div>
+              <div class="matrix-label">Sketch 1</div>
             </div>
             <div class="jsk-prod fragment" data-fragment-index="7">
               <div class="prod-val">4</div>
-              <div class="matrix-label">Z<sub>1</sub> &sdot; Z<sub>2</sub></div>
+              <div class="matrix-label">estimate</div>
             </div>
             <div class="counter-wrap">
               <div class="counter-box" data-counter="z2">
@@ -1185,7 +1266,7 @@
                 <span class="cval fragment current-visible" data-fragment-index="3">1</span>
                 <span class="cval fragment" data-fragment-index="4">2</span>
               </div>
-              <div class="matrix-label">Z<sub>2</sub></div>
+              <div class="matrix-label">Sketch 2</div>
             </div>
           </div>
           <div class="relation" data-tbl="1">
@@ -1402,7 +1483,7 @@
         <div class="num" data-id="secnum">03</div>
         <div class="kicker">Section</div>
         <h1 data-id="sectitle" style="color:var(--clay);">Generative Sketching</h1>
-        <p class="caption" style="margin-top:0.6em;">Learning a joint distribution so one sketch can span columns.</p>
+        <p class="caption" style="margin-top:0.6em;">Learning a joint distribution to generate sketches.</p>
       </section>
 
       <!-- Three-slide build: the table gains columns, the sketch gains RANK.
@@ -1653,7 +1734,7 @@
           <div class="gen">
               <div class="nnbox">
                 <div class="nnbox-bg" data-id="gen-model"></div>
-                <svg width="124" height="104" viewBox="0 0 124 104" aria-label="neural network">
+                <svg width="124" height="104" viewBox="0 0 124 104" data-id="gen-nn" aria-label="neural network">
                   <g class="nn-edge">
                     <line x1="30" y1="32" x2="62" y2="14"></line><line x1="30" y1="32" x2="62" y2="40"></line>
                     <line x1="30" y1="32" x2="62" y2="66"></line><line x1="30" y1="32" x2="62" y2="92"></line>
@@ -1727,7 +1808,7 @@
           <div class="gen">
               <div class="nnbox">
                 <div class="nnbox-bg" data-id="gen-model"></div>
-                <svg width="124" height="104" viewBox="0 0 124 104" aria-label="neural network">
+                <svg width="124" height="104" viewBox="0 0 124 104" data-id="gen-nn" aria-label="neural network">
                   <g class="nn-edge">
                     <line x1="30" y1="32" x2="62" y2="14"></line><line x1="30" y1="32" x2="62" y2="40"></line>
                     <line x1="30" y1="32" x2="62" y2="66"></line><line x1="30" y1="32" x2="62" y2="92"></line>
@@ -1801,7 +1882,7 @@
           <div class="gen">
               <div class="nnbox">
                 <div class="nnbox-bg" data-id="gen-model"></div>
-                <svg width="124" height="104" viewBox="0 0 124 104" aria-label="neural network">
+                <svg width="124" height="104" viewBox="0 0 124 104" data-id="gen-nn" aria-label="neural network">
                   <g class="nn-edge">
                     <line x1="30" y1="32" x2="62" y2="14"></line><line x1="30" y1="32" x2="62" y2="40"></line>
                     <line x1="30" y1="32" x2="62" y2="66"></line><line x1="30" y1="32" x2="62" y2="92"></line>
@@ -1875,7 +1956,7 @@
           <div class="gen">
               <div class="nnbox">
                 <div class="nnbox-bg" data-id="gen-model"></div>
-                <svg width="124" height="104" viewBox="0 0 124 104" aria-label="neural network">
+                <svg width="124" height="104" viewBox="0 0 124 104" data-id="gen-nn" aria-label="neural network">
                   <g class="nn-edge">
                     <line x1="30" y1="32" x2="62" y2="14"></line><line x1="30" y1="32" x2="62" y2="40"></line>
                     <line x1="30" y1="32" x2="62" y2="66"></line><line x1="30" y1="32" x2="62" y2="92"></line>
@@ -1919,12 +2000,12 @@
         <div class="eyebrow" data-id="sec-eyebrow" style="color:var(--clay);">3 &middot; Generative sketching</div>
         <h2>Generating the sketch</h2>
         <hr class="rule" data-id="sec-rule">
-        <p class="caption">One dot product against the key dictionary gives the whole sketch.</p>
+        <p class="caption">One dot product against the key embeddings gives the whole sketch.</p>
         <div class="jdist">
           <div class="gen">
               <div class="nnbox">
                 <div class="nnbox-bg" data-id="gen-model"></div>
-                <svg width="124" height="104" viewBox="0 0 124 104" aria-label="neural network">
+                <svg width="124" height="104" viewBox="0 0 124 104" data-id="gen-nn" aria-label="neural network">
                   <g class="nn-edge">
                     <line x1="30" y1="32" x2="62" y2="14"></line><line x1="30" y1="32" x2="62" y2="40"></line>
                     <line x1="30" y1="32" x2="62" y2="66"></line><line x1="30" y1="32" x2="62" y2="92"></line>
@@ -1948,52 +2029,54 @@
             <div class="pipearrow">&rarr;</div>
               <div class="vector">
                 <div class="matrix-grid" style="grid-template-columns: repeat(4, 24px);">
-                  <div class="matrix-cell" data-id="gen-out-0" style="background:rgba(176,101,79,0.30);"></div>
-                  <div class="matrix-cell" data-id="gen-out-1" style="background:rgba(176,101,79,0.30);"></div>
-                  <div class="matrix-cell" data-id="gen-out-2" style="background:rgba(176,101,79,0.30);"></div>
-                  <div class="matrix-cell" data-id="gen-out-3" style="background:rgba(176,101,79,0.30);"></div>
+                  <div class="matrix-cell gen-lit fragment custom" data-fragment-index="1" data-id="gen-out-0" style="background:rgba(176,101,79,0.30);"></div>
+                  <div class="matrix-cell gen-lit fragment custom" data-fragment-index="1" data-id="gen-out-1" style="background:rgba(176,101,79,0.30);"></div>
+                  <div class="matrix-cell gen-lit fragment custom" data-fragment-index="1" data-id="gen-out-2" style="background:rgba(176,101,79,0.30);"></div>
+                  <div class="matrix-cell gen-lit fragment custom" data-fragment-index="1" data-id="gen-out-3" style="background:rgba(176,101,79,0.30);"></div>
                 </div>
                 <div class="matrix-label" data-id="gen-outlab">output</div>
               </div>
-            <div class="projop" data-id="inf-dot">&sdot;</div>
-            <div class="vector" data-id="inf-dict">
+            <div class="projop">&sdot;</div>
+            <div class="vector">
               <div class="matrix-grid" style="grid-template-columns: repeat(6, 24px);">
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell gen-lit fragment custom key-rg" data-col="1" data-fragment-index="1"></div>
+                  <div class="matrix-cell gen-lit fragment custom" data-col="2" data-fragment-index="2"></div>
+                  <div class="matrix-cell gen-lit fragment custom" data-col="3" data-fragment-index="2"></div>
+                  <div class="matrix-cell gen-lit fragment custom key-b" data-col="4" data-fragment-index="2"></div>
+                  <div class="matrix-cell gen-lit fragment custom" data-col="5" data-fragment-index="2"></div>
+                  <div class="matrix-cell gen-lit fragment custom" data-col="6" data-fragment-index="2"></div>
+                  <div class="matrix-cell gen-lit fragment custom key-rg" data-col="1" data-fragment-index="1"></div>
+                  <div class="matrix-cell gen-lit fragment custom" data-col="2" data-fragment-index="2"></div>
+                  <div class="matrix-cell gen-lit fragment custom" data-col="3" data-fragment-index="2"></div>
+                  <div class="matrix-cell gen-lit fragment custom key-b" data-col="4" data-fragment-index="2"></div>
+                  <div class="matrix-cell gen-lit fragment custom" data-col="5" data-fragment-index="2"></div>
+                  <div class="matrix-cell gen-lit fragment custom" data-col="6" data-fragment-index="2"></div>
+                  <div class="matrix-cell gen-lit fragment custom key-rg" data-col="1" data-fragment-index="1"></div>
+                  <div class="matrix-cell gen-lit fragment custom" data-col="2" data-fragment-index="2"></div>
+                  <div class="matrix-cell gen-lit fragment custom" data-col="3" data-fragment-index="2"></div>
+                  <div class="matrix-cell gen-lit fragment custom key-b" data-col="4" data-fragment-index="2"></div>
+                  <div class="matrix-cell gen-lit fragment custom" data-col="5" data-fragment-index="2"></div>
+                  <div class="matrix-cell gen-lit fragment custom" data-col="6" data-fragment-index="2"></div>
+                  <div class="matrix-cell gen-lit fragment custom key-rg" data-col="1" data-fragment-index="1"></div>
+                  <div class="matrix-cell gen-lit fragment custom" data-col="2" data-fragment-index="2"></div>
+                  <div class="matrix-cell gen-lit fragment custom" data-col="3" data-fragment-index="2"></div>
+                  <div class="matrix-cell gen-lit fragment custom key-b" data-col="4" data-fragment-index="2"></div>
+                  <div class="matrix-cell gen-lit fragment custom" data-col="5" data-fragment-index="2"></div>
+                  <div class="matrix-cell gen-lit fragment custom" data-col="6" data-fragment-index="2"></div>
               </div>
               <div class="matrix-label">key dictionary &middot; d&times;N</div>
             </div>
-            <div class="projop" data-id="inf-eq" style="opacity:0;">=</div>
-            <div class="vector" data-id="inf-sketch" style="opacity:0;">
+            <!-- Revealed together as one fragment step: the sketch is meaningless
+                 without the = that introduces it. -->
+            <div class="projop fragment" data-fragment-index="1">=</div>
+            <div class="vector fragment" data-fragment-index="1">
               <div class="matrix-grid" style="grid-template-columns: repeat(6, 24px);">
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
+                  <div class="matrix-cell gen-sk key-rg fragment custom" data-fragment-index="1"></div>
+                  <div class="matrix-cell gen-sk fragment custom" data-fragment-index="2"></div>
+                  <div class="matrix-cell gen-sk fragment custom" data-fragment-index="2"></div>
+                  <div class="matrix-cell gen-sk key-b fragment custom" data-fragment-index="2"></div>
+                  <div class="matrix-cell gen-sk fragment custom" data-fragment-index="2"></div>
+                  <div class="matrix-cell gen-sk fragment custom" data-fragment-index="2"></div>
               </div>
               <div class="matrix-label">sketch</div>
             </div>
@@ -2001,16 +2084,20 @@
         </div>
       </section>
 
-      <section data-auto-animate>
-        <div class="eyebrow" data-id="sec-eyebrow" style="color:var(--clay);">3 &middot; Generative sketching</div>
-        <h2>Generating the sketch</h2>
-        <hr class="rule" data-id="sec-rule">
-        <p class="caption">One dot product against the key dictionary gives the whole sketch.</p>
+      <!-- No data-auto-animate on purpose. This slide is ~36px taller than the one
+           before it and Reveal centres content vertically, so a morph would ride the
+           shared model/output row upward on entry. A plain fade has no such drift.
+           Do not "fix" this by adding the attribute. -->
+      <section>
+        <div class="eyebrow" style="color:var(--clay);">3 &middot; Generative sketching</div>
+        <h2>Independent sketches</h2>
+        <hr class="rule">
+        <p class="caption">Each sketch has its own embedding dictionary.</p>
         <div class="jdist">
           <div class="gen">
               <div class="nnbox">
-                <div class="nnbox-bg" data-id="gen-model"></div>
-                <svg width="124" height="104" viewBox="0 0 124 104" aria-label="neural network">
+                <div class="nnbox-bg"></div>
+                <svg width="124" height="104" viewBox="0 0 124 104" data-id="gen-nn" aria-label="neural network">
                   <g class="nn-edge">
                     <line x1="30" y1="32" x2="62" y2="14"></line><line x1="30" y1="32" x2="62" y2="40"></line>
                     <line x1="30" y1="32" x2="62" y2="66"></line><line x1="30" y1="32" x2="62" y2="92"></line>
@@ -2027,65 +2114,171 @@
                     <circle cx="107" cy="52" r="8"></circle>
                   </g>
                 </svg>
-              <span class="nn-socket" style="left:18px; top:31px;"><span class="dot attr-2 fly-dot" data-id="fly-r1-a" style=""></span></span>
-              <span class="nn-socket" style="left:18px; top:71px;"><span class="dot attr-2 fly-dot" data-id="fly-r1-b" style=""></span></span>
                 <div class="matrix-label">model</div>
               </div>
             <div class="pipearrow">&rarr;</div>
               <div class="vector">
                 <div class="matrix-grid" style="grid-template-columns: repeat(4, 24px);">
-                  <div class="matrix-cell" data-id="gen-out-0" style="background:rgba(176,101,79,0.30);"></div>
-                  <div class="matrix-cell" data-id="gen-out-1" style="background:rgba(176,101,79,0.30);"></div>
-                  <div class="matrix-cell" data-id="gen-out-2" style="background:rgba(176,101,79,0.30);"></div>
-                  <div class="matrix-cell" data-id="gen-out-3" style="background:rgba(176,101,79,0.30);"></div>
+                  <div class="matrix-cell" style="background:rgba(176,101,79,0.30);"></div>
+                  <div class="matrix-cell" style="background:rgba(176,101,79,0.30);"></div>
+                  <div class="matrix-cell" style="background:rgba(176,101,79,0.30);"></div>
+                  <div class="matrix-cell" style="background:rgba(176,101,79,0.30);"></div>
                 </div>
-                <div class="matrix-label" data-id="gen-outlab">output</div>
+                <div class="matrix-label">output</div>
               </div>
-            <div class="projop" data-id="inf-dot">&sdot;</div>
-            <div class="vector" data-id="inf-dict">
-              <div class="matrix-grid" style="grid-template-columns: repeat(6, 24px);">
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
+            <div class="projop">&sdot;</div>
+            <!-- Carousel state triggers: zero-size, and EARLIER SIBLINGS of .dictstack
+                 so `.s2.visible ~ .dictstack` can reach the cards. Same fragment index
+                 as the sketch row each one accompanies. -->
+            <span class="swiv s2 fragment custom" data-fragment-index="2"></span>
+            <span class="swiv s3 fragment custom" data-fragment-index="3"></span>
+            <div class="dictstack">
+              <div class="dcard" data-k="3">
+                <div class="matrix-grid" style="grid-template-columns: repeat(6, 24px);">
+                  <div class="matrix-cell" data-col="1"></div>
+                  <div class="matrix-cell key-g" data-col="2"></div>
+                  <div class="matrix-cell" data-col="3"></div>
+                  <div class="matrix-cell" data-col="4"></div>
+                  <div class="matrix-cell key-r" data-col="5"></div>
+                  <div class="matrix-cell key-b" data-col="6"></div>
+
+                  <div class="matrix-cell" data-col="1"></div>
+                  <div class="matrix-cell key-g" data-col="2"></div>
+                  <div class="matrix-cell" data-col="3"></div>
+                  <div class="matrix-cell" data-col="4"></div>
+                  <div class="matrix-cell key-r" data-col="5"></div>
+                  <div class="matrix-cell key-b" data-col="6"></div>
+
+                  <div class="matrix-cell" data-col="1"></div>
+                  <div class="matrix-cell key-g" data-col="2"></div>
+                  <div class="matrix-cell" data-col="3"></div>
+                  <div class="matrix-cell" data-col="4"></div>
+                  <div class="matrix-cell key-r" data-col="5"></div>
+                  <div class="matrix-cell key-b" data-col="6"></div>
+
+                  <div class="matrix-cell" data-col="1"></div>
+                  <div class="matrix-cell key-g" data-col="2"></div>
+                  <div class="matrix-cell" data-col="3"></div>
+                  <div class="matrix-cell" data-col="4"></div>
+                  <div class="matrix-cell key-r" data-col="5"></div>
+                  <div class="matrix-cell key-b" data-col="6"></div>
+
+                </div>
+                <div class="matrix-label">dictionary 3</div>
               </div>
-              <div class="matrix-label">key dictionary &middot; d&times;N</div>
+              <div class="dcard" data-k="2">
+                <div class="matrix-grid" style="grid-template-columns: repeat(6, 24px);">
+                  <div class="matrix-cell" data-col="1"></div>
+                  <div class="matrix-cell key-b" data-col="2"></div>
+                  <div class="matrix-cell key-r" data-col="3"></div>
+                  <div class="matrix-cell" data-col="4"></div>
+                  <div class="matrix-cell" data-col="5"></div>
+                  <div class="matrix-cell key-g" data-col="6"></div>
+
+                  <div class="matrix-cell" data-col="1"></div>
+                  <div class="matrix-cell key-b" data-col="2"></div>
+                  <div class="matrix-cell key-r" data-col="3"></div>
+                  <div class="matrix-cell" data-col="4"></div>
+                  <div class="matrix-cell" data-col="5"></div>
+                  <div class="matrix-cell key-g" data-col="6"></div>
+
+                  <div class="matrix-cell" data-col="1"></div>
+                  <div class="matrix-cell key-b" data-col="2"></div>
+                  <div class="matrix-cell key-r" data-col="3"></div>
+                  <div class="matrix-cell" data-col="4"></div>
+                  <div class="matrix-cell" data-col="5"></div>
+                  <div class="matrix-cell key-g" data-col="6"></div>
+
+                  <div class="matrix-cell" data-col="1"></div>
+                  <div class="matrix-cell key-b" data-col="2"></div>
+                  <div class="matrix-cell key-r" data-col="3"></div>
+                  <div class="matrix-cell" data-col="4"></div>
+                  <div class="matrix-cell" data-col="5"></div>
+                  <div class="matrix-cell key-g" data-col="6"></div>
+
+                </div>
+                <div class="matrix-label">dictionary 2</div>
+              </div>
+              <div class="dcard" data-k="1">
+                <div class="matrix-grid" style="grid-template-columns: repeat(6, 24px);">
+                  <div class="matrix-cell key-rg" data-col="1"></div>
+                  <div class="matrix-cell" data-col="2"></div>
+                  <div class="matrix-cell" data-col="3"></div>
+                  <div class="matrix-cell key-b" data-col="4"></div>
+                  <div class="matrix-cell" data-col="5"></div>
+                  <div class="matrix-cell" data-col="6"></div>
+
+                  <div class="matrix-cell key-rg" data-col="1"></div>
+                  <div class="matrix-cell" data-col="2"></div>
+                  <div class="matrix-cell" data-col="3"></div>
+                  <div class="matrix-cell key-b" data-col="4"></div>
+                  <div class="matrix-cell" data-col="5"></div>
+                  <div class="matrix-cell" data-col="6"></div>
+
+                  <div class="matrix-cell key-rg" data-col="1"></div>
+                  <div class="matrix-cell" data-col="2"></div>
+                  <div class="matrix-cell" data-col="3"></div>
+                  <div class="matrix-cell key-b" data-col="4"></div>
+                  <div class="matrix-cell" data-col="5"></div>
+                  <div class="matrix-cell" data-col="6"></div>
+
+                  <div class="matrix-cell key-rg" data-col="1"></div>
+                  <div class="matrix-cell" data-col="2"></div>
+                  <div class="matrix-cell" data-col="3"></div>
+                  <div class="matrix-cell key-b" data-col="4"></div>
+                  <div class="matrix-cell" data-col="5"></div>
+                  <div class="matrix-cell" data-col="6"></div>
+
+                </div>
+                <div class="matrix-label">dictionary 1</div>
+              </div>
             </div>
-            <div class="projop" data-id="inf-eq" style="">=</div>
-            <div class="vector" data-id="inf-sketch" style="">
-              <div class="matrix-grid" style="grid-template-columns: repeat(6, 24px);">
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
-                  <div class="matrix-cell"></div>
+            <div class="projop">=</div>
+            <div class="sketchcol">
+            <div class="sketchrow fragment" data-fragment-index="1">
+              <div class="vector">
+                <div class="matrix-grid" style="grid-template-columns: repeat(6, 24px);">
+                    <div class="matrix-cell key-rg"></div>
+                    <div class="matrix-cell"></div>
+                    <div class="matrix-cell"></div>
+                    <div class="matrix-cell key-b"></div>
+                    <div class="matrix-cell"></div>
+                    <div class="matrix-cell"></div>
+                </div>
+                <div class="matrix-label">sketch 1</div>
               </div>
-              <div class="matrix-label">sketch</div>
+            </div>
+            <div class="sketchrow fragment" data-fragment-index="2">
+              <div class="vector">
+                <div class="matrix-grid" style="grid-template-columns: repeat(6, 24px);">
+                    <div class="matrix-cell"></div>
+                    <div class="matrix-cell key-b"></div>
+                    <div class="matrix-cell key-r"></div>
+                    <div class="matrix-cell"></div>
+                    <div class="matrix-cell"></div>
+                    <div class="matrix-cell key-g"></div>
+                </div>
+                <div class="matrix-label">sketch 2</div>
+              </div>
+            </div>
+            <div class="sketchrow fragment" data-fragment-index="3">
+              <div class="vector">
+                <div class="matrix-grid" style="grid-template-columns: repeat(6, 24px);">
+                    <div class="matrix-cell"></div>
+                    <div class="matrix-cell key-g"></div>
+                    <div class="matrix-cell"></div>
+                    <div class="matrix-cell"></div>
+                    <div class="matrix-cell key-r"></div>
+                    <div class="matrix-cell key-b"></div>
+                </div>
+                <div class="matrix-label">sketch 3</div>
+              </div>
+            </div>
             </div>
           </div>
         </div>
       </section>
+
     </section>
 
     <section>
