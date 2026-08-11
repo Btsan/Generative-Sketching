@@ -273,7 +273,13 @@
    on the previous two slides. Anchored to the arena (not .tow) so it centres on
    the counter rather than on the full width, which the stream column would skew.
    It sits in the gap .tow's align-items:center leaves under the short arena. */
-.tw-math { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: 20px; display: flex; flex-direction: column; align-items: center; gap: 10px; white-space: nowrap; font-size: 0.66em; color: var(--ink); }
+/* Split above/below the arena so neither block has to carry both formulas, which
+   is what let the type go up from 0.66em. Still absolutely positioned in BOTH
+   directions: they contribute no height, so the figure cannot shift relative to
+   the neighbouring slides that reserve the same space. */
+.tw-math { position: absolute; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 10px; white-space: nowrap; font-size: 0.82em; color: var(--ink); }
+.tw-math.above { bottom: 100%; margin-bottom: 18px; }
+.tw-math.below { top: 100%; margin-top: 18px; }
 .pile { display: flex; gap: 8px; }
 .pile.minus { flex-direction: row-reverse; }   /* arrivals queue outward from the counter */
 .pile-slot { width: 26px; height: 26px; }      /* reserves the landing spot, draws nothing */
@@ -1189,10 +1195,15 @@
                 <div class="pile-slot" data-slot="p4"></div>
                 <div class="pile-slot" data-slot="p5"></div>
             </div>
-            <!-- Premise of the correctness proof. Absolutely positioned, so it adds no
-                 height and cannot shift the figure relative to the previous slide. -->
-            <div class="tw-math">
+            <!-- Premise of the correctness proof, split either side of the counter so
+                 each has room to be read. Absolutely positioned, so they add no height
+                 and cannot shift the figure relative to the neighbouring slides.
+                 The short definition goes above, where the arena is closest to the
+                 Stream box; the two-line cases block goes below, where there is room. -->
+            <div class="tw-math above">
               <div class="fragment" data-fragment-index="1">\( \xi:\ [N] \to \{-1, +1\} \)</div>
+            </div>
+            <div class="tw-math below">
               <div class="fragment" data-fragment-index="2">\( \mathbb{E}\left[\xi(i)\,\xi(j)\right] = \begin{cases} 1, & i = j \\ 0, & i \neq j \end{cases} \)</div>
             </div>
           </div>
