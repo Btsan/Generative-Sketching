@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width">
 <title>Generative Sketching for Relational Joins</title>
 
 <!-- ============================================================================
@@ -77,7 +77,12 @@
   /* ---- reveal base overrides (derived from tokens above) ---- */
   --r-background-color: var(--paper);
   --r-main-font: var(--font-body);
-  --r-main-font-size: 30px;
+  /* THE master type dial. Nothing else in the deck sets a base size: reset.min.css
+     flattens every element to font:inherit, and no Reveal theme is loaded, so
+     without the .reveal rule below the whole deck falls back to the browser's
+     16px. Every em value in this file resolves against this number -- set it back
+     to 16px to restore the pre-2026-08-10 sizing exactly. */
+  --r-main-font-size: 24px;
   --r-main-color: var(--ink);
   --r-heading-font: var(--font-display);
   --r-heading-color: var(--slate);
@@ -91,7 +96,7 @@
 }
 
 /* ---- base ---- */
-.reveal { font-family: var(--font-body); color: var(--ink); font-weight: 400; }
+.reveal { font-family: var(--font-body); font-size: var(--r-main-font-size); color: var(--ink); font-weight: 400; }
 .reveal .slides { text-align: left; }
 .reveal .slides section { line-height: 1.4; }
 .reveal h1, .reveal h2, .reveal h3, .reveal h4 {
@@ -99,6 +104,11 @@
   font-weight: 600; letter-spacing: -0.01em; text-transform: none; margin-bottom: 0.5em;
 }
 .reveal h1 { line-height: 1.1; }
+/* Slide titles had no size rule at all, so they rendered at the base size and were
+   set apart only by family, weight and colour. Both h1s in the deck are already
+   sized explicitly (.title-slide 2.3em, .section-divider 2.4em), so only h2 needs
+   this. Lower it to ~1.35em first if a content slide overflows. */
+.reveal h2 { font-size: 1.5em; line-height: 1.2; }
 .reveal p, .reveal li { color: var(--ink); }
 .reveal strong { color: var(--ink); font-weight: 600; }
 .reveal em { color: var(--muted); font-style: italic; }
@@ -307,7 +317,11 @@
 /* ---- interactive round-by-round tug-of-war (JS-driven, no fragments) ---- */
 .tw-dot { position: absolute; inset: 0; z-index: 3; transition: transform 0.45s ease; }
 .tw-controls { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 1.05em; font-family: var(--font-label); font-size: 0.55em; }
-.tw-btn { font-family: var(--font-label); font-weight: 600; font-size: 1em; letter-spacing: 0.05em; text-transform: uppercase; color: #fff; background: var(--slate); border: none; border-radius: 7px; padding: 9px 22px; cursor: pointer; }
+/* Absolute px, not em, on purpose: these are UI chrome, not content, and they sit in
+   three different containers -- .tw-controls sets 0.55em but .csk-steppers and
+   .vmv-foot set nothing, so an em size made the same button render at two wildly
+   different scales and follow any change to the base type. */
+.tw-btn { font-family: var(--font-label); font-weight: 600; font-size: 13px; letter-spacing: 0.05em; text-transform: uppercase; color: #fff; background: var(--slate); border: none; border-radius: 7px; padding: 8px 18px; cursor: pointer; }
 .tw-btn:hover { background: #34506a; }
 .tw-btn.tw-ghost { background: transparent; color: var(--slate); box-shadow: inset 0 0 0 1px var(--rule); }
 .tw-round { color: var(--muted); }
@@ -584,7 +598,13 @@
 /* `x` heads its column; `y` is its mirror -- beside its row, vertically centred
    against the 34px cells rather than floating in the corner above x. */
 .vmv-xlab { display: flex; align-items: flex-end; justify-content: center; }
-.vmv-ylab { grid-row: 1; grid-column: 1 / 3; display: flex; align-items: center; justify-content: flex-end; padding-right: 7px; }
+/* No explicit grid-row/column: the header rows now emit their own spacer cells, so
+   this auto-places like everything else. Pinning it broke when xi gained a row. */
+.vmv-ylab { display: flex; align-items: center; justify-content: flex-end; padding-right: 7px; }
+/* Same +-1 colour coding as the tug-of-war sign vectors -- this is the last slide
+   in that thread, so the motif should carry through. */
+.vmv-pos { color: var(--plus); font-weight: 600; }
+.vmv-neg { color: var(--minus); font-weight: 600; }
 .vmv-right { display: flex; flex-direction: column; gap: 5px; }
 .vmv-line { display: flex; align-items: center; gap: 12px; }
 .vmv-lab { font-family: var(--font-mono); font-size: 13px; color: var(--muted); min-width: 62px; text-align: right; }
@@ -986,10 +1006,11 @@
            it. Relative path, not a data URI: 13.5 MB would inflate the deck past 18 MB
            and make every future edit rewrite it. -->
       <section><div class="eyebrow">1 &middot; Definition</div><h2>Sketched Isotropic Gaussian Regularization</h2><hr class="rule">
-        <p class="caption">The CIFAR-10 embedding distribution as it trains: a random 1-D projection of the latents (left), and the density of that sketch against the target \( \mathcal{N}(0,1) \) (right).</p>
+        <p class="caption">The CIFAR-10 embedding distribution as it trains.</p>
         <figure class="figure">
           <video src="JEPA/cifar10_jepa_projection_h264.mp4" style="width:902px;"
                  data-autoplay loop muted playsinline controls preload="metadata"></video>
+          <figcaption>A random 1-D projection of the latents (left), and the density of that sketch (right)</figcaption>
         </figure>
       </section>
 
@@ -2962,7 +2983,7 @@
       for (a = 0; a < w; a++) C[b] += Sx[a] * SA[(a + b) % w];
     var est = 0;
     for (b = 0; b < w; b++) est += C[b] * Sy[b];
-    return { Sx: Sx, SA: SA, C: C, Sy: Sy, est: est, h1: h1, h2: h2 };
+    return { Sx: Sx, SA: SA, C: C, Sy: Sy, est: est, h1: h1, h2: h2, g1: g1, g2: g2 };
   }
 
   /* Math.random() here is DATA randomness -- the factors -- deliberately kept
@@ -3002,23 +3023,43 @@
 
   /* Contingency-table layout: y across the top with its bucket under it, x down
      the left with its bucket beside it, A in the middle -- so each A cell sits
-     at the crossing of the row and column whose buckets add to give its own. */
+     at the crossing of the row and column whose buckets add to give its own.
+
+     Both halves of the hash are shown. The BUCKET hash sits between each vector
+     and the matrix (h1 right of x, h2 under y); the SIGN hash sits on the outer
+     side (xi1 left of x, xi2 above y). Everything auto-places, so each row must
+     emit exactly 3 + VMV_M cells -- hence the empty labels padding the headers. */
   function vmvGrid(res) {
     var F = VMV.f, g = VMV.fac, i, j;
     g.innerHTML = '';
-    g.style.gridTemplateColumns = '34px 26px repeat(' + VMV_M + ', 34px)';
+    /*                            xi1   x     h1    A... */
+    g.style.gridTemplateColumns = '34px 34px 26px repeat(' + VMV_M + ', 34px)';
     function lab(txt, cls) {
       var d = document.createElement('div');
       d.className = cls || 'vmv-hash';
       d.textContent = txt;
       return d;
     }
-    g.appendChild(lab('y', 'vmv-hash vmv-ylab'));   /* placed at row 1 / cols 1-2 by CSS */
+    /* sign is +1/-1; colour it with the deck's recurring +-1 motif */
+    function sgn(sub, v) {
+      return lab('ξ' + sub + '=' + (v > 0 ? '+1' : '−1'),
+                 'vmv-hash ' + (v > 0 ? 'vmv-pos' : 'vmv-neg'));
+    }
+    /* row 1: xi2, above y */
+    g.appendChild(lab('')); g.appendChild(lab('')); g.appendChild(lab(''));
+    for (j = 0; j < VMV_M; j++) g.appendChild(sgn('₂', res.g2[j]));
+    /* row 2: y */
+    g.appendChild(lab('')); g.appendChild(lab(''));
+    g.appendChild(lab('y', 'vmv-hash vmv-ylab'));
     for (j = 0; j < VMV_M; j++) g.appendChild(vmvCell(F.y[j]));
+    /* row 3: h2, under y */
+    g.appendChild(lab(''));
     g.appendChild(lab('x', 'vmv-hash vmv-xlab'));
     g.appendChild(lab(''));
     for (j = 0; j < VMV_M; j++) g.appendChild(lab('h₂=' + res.h2[j]));
+    /* rows 4+: xi1 | x | h1 | A */
     for (i = 0; i < VMV_N; i++) {
+      g.appendChild(sgn('₁', res.g1[i]));
       g.appendChild(vmvCell(F.x[i]));
       g.appendChild(lab('h₁=' + res.h1[i]));
       for (j = 0; j < VMV_M; j++) g.appendChild(vmvCell(F.A[i][j]));
@@ -3409,7 +3450,7 @@
 
   Reveal.initialize({
     width: 1120, height: 760, margin: 0.06,
-    minScale: 0.2, maxScale: 2.0,
+    minScale: 0.2, maxScale: 3.0,
     hash: true, slideNumber: 'c/t',
     controls: true, progress: true,
     transition: 'fade', transitionSpeed: 'default',
