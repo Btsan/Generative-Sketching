@@ -609,12 +609,21 @@
    in that thread, so the motif should carry through. */
 .vmv-pos { color: var(--plus); font-weight: 600; }
 .vmv-neg { color: var(--minus); font-weight: 600; }
-.vmv-right { display: flex; flex-direction: column; gap: 5px; }
+/* Every width in here is PINNED, and that is the point. `.vmv` centres two
+   content-sized halves, so anything that grows widens this column and slides
+   the whole demo sideways -- and .prod-val is 2.2em, ~32px per character, so
+   one extra digit in the estimate moved the figure ~16px, once per draw with
+   Play running. Nothing below may be content-sized.
+
+   The reserved widths come from vmvFactors()'s ranges (x<=4, y<=3, A<=3):
+   |Sx|<=16, |SA|<=36, |Sy|<=9, hence |C[b]| <= 16*36 = 576 -- 4 chars with the
+   sign, which fits 40px at 15px mono (9px/char) -- and |est| <= 576*9 = 5184,
+   5 chars. So the slots can never overflow, whatever the draw. */
+.vmv-right { display: flex; flex-direction: column; gap: 5px; flex: none; width: 600px; }
 .vmv-line { display: flex; align-items: center; gap: 12px; }
 .vmv-lab { font-family: var(--font-mono); font-size: 15px; color: var(--muted); min-width: 62px; text-align: right; }
-/* correlation values can run to several digits, so cells grow past 34px */
 .vmv-row { display: flex; gap: 4px; }
-.vmv-row .csk-cell { width: auto; min-width: 40px; padding: 0 6px; }
+.vmv-row .csk-cell { width: 40px; padding: 0 6px; }
 .vmv-op { display: flex; align-items: baseline; gap: 10px; padding: 3px 0 3px 92px; font-family: var(--font-label); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
 .vmv-op .sym { font-family: var(--font-mono); font-size: 17px; color: var(--slate); text-transform: none; }
 .vmv-res { display: flex; align-items: baseline; gap: 14px; padding-left: 74px; margin-top: 6px; }
@@ -622,6 +631,17 @@
 .vmv-res .vmv-avg { font-family: var(--font-mono); font-size: 15px; color: var(--ink); }
 .vmv-res .vmv-avg strong { color: var(--slate); font-size: 1.15em; }
 .vmv-res .vmv-nd { color: var(--muted); font-size: 0.85em; }
+/* Digit slots, each sized to its own font: the result line spans four sizes
+   (2.2em / 15px / 1.15em of that / 0.85em of that), so these are measured px
+   rather than `ch`, which would resolve against whatever font is available. */
+.vmv-res > * { flex: none; }
+.vmv-res .prod-val { display: inline-block; width: 160px; }
+.vmv-res .vmv-avg strong { display: inline-block; width: 84px; }
+.vmv-res .vmv-ndraws { display: inline-block; width: 86px; }
+/* The true value is fixed for the session, but it is drawn at random on load
+   (up to 432 = 3 chars), so it gets a slot too -- otherwise the line's width,
+   and with it the whole figure's position, would differ between reloads. */
+.vmv-res .vmv-truth strong { display: inline-block; width: 28px; }
 .vmv-foot { display: flex; align-items: center; justify-content: center; gap: 26px; margin-top: 1.1em; }
 
 /* ---- figures ---------------------------------------------------------------
@@ -2522,7 +2542,7 @@
           <div class="vmv-line"><span class="vmv-lab">S<sub>x</sub>&#8902;S<sub>A</sub></span><div class="vmv-row" id="vmv-c"></div></div>
           <div class="vmv-op"><span class="sym">&sdot;</span> dot</div>
           <div class="vmv-line"><span class="vmv-lab">S<sub>y</sub></span><div class="vmv-row" id="vmv-sy"></div></div>
-          <div class="vmv-res"><span class="prod-val" id="vmv-est">&mdash;</span><span class="vmv-avg">avg <strong id="vmv-avgval">&mdash;</strong> <span class="vmv-nd">over <span id="vmv-n">0 draws</span></span></span><span class="vmv-truth">true <strong id="vmv-true2">&mdash;</strong></span></div>
+          <div class="vmv-res"><span class="prod-val" id="vmv-est">&mdash;</span><span class="vmv-avg">avg <strong id="vmv-avgval">&mdash;</strong> <span class="vmv-nd">over <span class="vmv-ndraws" id="vmv-n">0 draws</span></span></span><span class="vmv-truth">true <strong id="vmv-true2">&mdash;</strong></span></div>
         </div>
       </div>
       <div class="vmv-foot">
