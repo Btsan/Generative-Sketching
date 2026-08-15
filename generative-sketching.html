@@ -189,6 +189,17 @@
 .matrix-grid { display: grid; grid-template-columns: repeat(2, 24px); grid-auto-rows: 24px; gap: 10px; padding: 10px 12px; border-left: 2px solid var(--slate); border-right: 2px solid var(--slate); }
 .matrix-cell { border-radius: 4px; background: var(--slate-soft); box-shadow: inset 0 0 0 1px rgba(62,92,118,0.28); }
 
+/* ---- softmax distribution ("Learning the key embeddings") ------------------
+   The model's output over keys is a PROBABILITY DISTRIBUTION, and six identical
+   cells said nothing about that -- height does. Column pitch (24px wide, 10px
+   gap) deliberately matches .matrix-grid above, so the bars read as the same
+   six buckets as the dictionary beside them. No bracket borders: the baseline
+   rule is an axis, which is what marks this out as a distribution rather than
+   one more vector. Percentage heights resolve against the definite height here.
+   Slate, not the key colours -- colour is the next slide's reveal. */
+.probdist     { display: flex; align-items: flex-end; gap: 10px; height: 96px; padding: 0 12px; border-bottom: 1px solid var(--rule); }
+.probdist-bar { width: 24px; height: var(--p); min-height: 3px; background: var(--slate); border-radius: 3px 3px 0 0; }
+
 /* ---- "Generating the sketch": inner-product walk --------------------------
    sketch cell j = output row  DOT  dictionary column j.
    The dictionary grid is ROW-MAJOR at 6 columns, so column j is DOM children
@@ -2052,11 +2063,124 @@
         </div>
       </section>
 
+      <!-- The dictionary is introduced HERE, not on the next slide. It is the model's
+           output layer: the key is predicted by scoring the output against one learned
+           embedding per key, and the cross-entropy trains both. Without this beat the
+           dictionary arrives fully formed at inference and reads as a new component --
+           exactly the question it drew from an audience.
+           Everything but the dictionary and the scores is copied verbatim from the slide
+           before (model, output, loss tail) or after (dictionary), so auto-animate matches
+           it and only the new parts fade in. -->
+      <section data-auto-animate>
+        <div class="eyebrow" data-id="sec-eyebrow" style="color:var(--clay);">3 &middot; Generative sketching</div>
+        <h2>Learning the key embeddings</h2>
+        <hr class="rule" data-id="sec-rule">
+        <!-- Keep this to ONE line. The section is vertically centred, so a second line
+             drops the diagram ~12px below the slides either side and the auto-animated
+             model box visibly drifts on entry and exit. -->
+        <p class="caption">Softmax over one embedding per key: the dictionary is an output layer of the model, trained with it.</p>
+        <div class="jdist">
+          <div class="gen">
+              <div class="nnbox">
+                <div class="nnbox-bg" data-id="gen-model"></div>
+                <svg width="124" height="104" viewBox="0 0 124 104" data-id="gen-nn" aria-label="neural network">
+                  <g class="nn-edge">
+                    <line x1="30" y1="32" x2="62" y2="14"></line><line x1="30" y1="32" x2="62" y2="40"></line>
+                    <line x1="30" y1="32" x2="62" y2="66"></line><line x1="30" y1="32" x2="62" y2="92"></line>
+                    <line x1="30" y1="72" x2="62" y2="14"></line><line x1="30" y1="72" x2="62" y2="40"></line>
+                    <line x1="30" y1="72" x2="62" y2="66"></line><line x1="30" y1="72" x2="62" y2="92"></line>
+                    <line x1="62" y1="14" x2="107" y2="52"></line><line x1="62" y1="40" x2="107" y2="52"></line>
+                    <line x1="62" y1="66" x2="107" y2="52"></line><line x1="62" y1="92" x2="107" y2="52"></line>
+                  </g>
+                  <circle class="nn-in-node" cx="17" cy="32" r="13"></circle>
+                  <circle class="nn-in-node" cx="17" cy="72" r="13"></circle>
+                  <g class="nn-node">
+                    <circle cx="62" cy="14" r="6"></circle><circle cx="62" cy="40" r="6"></circle>
+                    <circle cx="62" cy="66" r="6"></circle><circle cx="62" cy="92" r="6"></circle>
+                    <circle cx="107" cy="52" r="8"></circle>
+                  </g>
+                </svg>
+              <span class="nn-socket" style="left:18px; top:31px;"><span class="dot attr-2 fly-dot" data-id="fly-r1-a" style=""></span></span>
+              <span class="nn-socket" style="left:18px; top:71px;"><span class="dot attr-2 fly-dot" data-id="fly-r1-b" style=""></span></span>
+                <div class="matrix-label">model</div>
+              </div>
+            <div class="pipearrow">&rarr;</div>
+              <div class="vector">
+                <div class="matrix-grid" style="grid-template-columns: repeat(4, 24px);">
+                  <div class="matrix-cell" data-id="gen-out-0" style="background:rgba(176,101,79,0.30);"></div>
+                  <div class="matrix-cell" data-id="gen-out-1" style="background:rgba(176,101,79,0.30);"></div>
+                  <div class="matrix-cell" data-id="gen-out-2" style="background:rgba(176,101,79,0.30);"></div>
+                  <div class="matrix-cell" data-id="gen-out-3" style="background:rgba(176,101,79,0.30);"></div>
+                </div>
+                <div class="matrix-label" data-id="gen-outlab">output</div>
+              </div>
+            <div class="projop">&sdot;</div>
+            <div class="vector" data-id="gen-dict">
+              <div class="matrix-grid" style="grid-template-columns: repeat(6, 24px);">
+                  <div class="matrix-cell key-rg" data-col="1"></div>
+                  <div class="matrix-cell" data-col="2"></div>
+                  <div class="matrix-cell" data-col="3"></div>
+                  <div class="matrix-cell key-b" data-col="4"></div>
+                  <div class="matrix-cell" data-col="5"></div>
+                  <div class="matrix-cell" data-col="6"></div>
+                  <div class="matrix-cell key-rg" data-col="1"></div>
+                  <div class="matrix-cell" data-col="2"></div>
+                  <div class="matrix-cell" data-col="3"></div>
+                  <div class="matrix-cell key-b" data-col="4"></div>
+                  <div class="matrix-cell" data-col="5"></div>
+                  <div class="matrix-cell" data-col="6"></div>
+                  <div class="matrix-cell key-rg" data-col="1"></div>
+                  <div class="matrix-cell" data-col="2"></div>
+                  <div class="matrix-cell" data-col="3"></div>
+                  <div class="matrix-cell key-b" data-col="4"></div>
+                  <div class="matrix-cell" data-col="5"></div>
+                  <div class="matrix-cell" data-col="6"></div>
+                  <div class="matrix-cell key-rg" data-col="1"></div>
+                  <div class="matrix-cell" data-col="2"></div>
+                  <div class="matrix-cell" data-col="3"></div>
+                  <div class="matrix-cell key-b" data-col="4"></div>
+                  <div class="matrix-cell" data-col="5"></div>
+                  <div class="matrix-cell" data-col="6"></div>
+              </div>
+              <div class="matrix-label">key dictionary &middot; d&times;N</div>
+            </div>
+            <div class="projop">=</div>
+            <!-- The six --p values ARE the distribution: .62 + .02 + .02 + .30 + .02 + .02
+                 = 1.00. Keep them summing to 1 or the picture stops being a softmax.
+                 Bucket 1 dominates because it is the one holding this row's green key (red
+                 and green collide there, see .key-rg); bucket 4 is the blue key; the other
+                 four hold no key at all, so they sit at the min-height floor. -->
+            <div class="vector">
+              <div class="probdist">
+                  <div class="probdist-bar" style="--p:62%"></div>
+                  <div class="probdist-bar" style="--p:2%"></div>
+                  <div class="probdist-bar" style="--p:2%"></div>
+                  <div class="probdist-bar" style="--p:30%"></div>
+                  <div class="probdist-bar" style="--p:2%"></div>
+                  <div class="probdist-bar" style="--p:2%"></div>
+              </div>
+              <div class="matrix-label">P(key | row)</div>
+            </div>
+            <!-- Loss tail, verbatim from the slide before. It leaves this row 1093px wide
+                 inside a 1115px slide, which is deliberately tight: .gen centres its
+                 children, so shortening "target . loss" would pull the dictionary sideways
+                 and the next slide's dictionary would no longer arrive by a clean rigid
+                 translation. Measured: every element moves +78.7px between the two slides,
+                 nothing distorts. Trim this and you break that. -->
+              <div class="projop" data-id="loss-op" style="">&minus;</div>
+              <div class="vector">
+                <span class="loss-slot"><span class="dot fly-dot" data-id="fly-r1-key" style="background:var(--green)"></span></span>
+                <div class="matrix-label" data-id="loss-lab" style="">target &middot; loss</div>
+              </div>
+          </div>
+        </div>
+      </section>
+
       <section data-auto-animate>
         <div class="eyebrow" data-id="sec-eyebrow" style="color:var(--clay);">3 &middot; Generative sketching</div>
         <h2>Generating the sketch</h2>
         <hr class="rule" data-id="sec-rule">
-        <p class="caption">One dot product against the key embeddings gives the whole sketch.</p>
+        <p class="caption">The same product the loss trained &mdash; one dot product against the key embeddings gives the whole sketch.</p>
         <div class="jdist">
           <div class="gen">
               <div class="nnbox">
@@ -2093,7 +2217,7 @@
                 <div class="matrix-label" data-id="gen-outlab">output</div>
               </div>
             <div class="projop">&sdot;</div>
-            <div class="vector">
+            <div class="vector" data-id="gen-dict">
               <div class="matrix-grid" style="grid-template-columns: repeat(6, 24px);">
                   <div class="matrix-cell gen-lit fragment custom key-rg" data-col="1" data-fragment-index="1"></div>
                   <div class="matrix-cell gen-lit fragment custom" data-col="2" data-fragment-index="2"></div>
